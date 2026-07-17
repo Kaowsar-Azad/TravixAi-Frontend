@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Inter, Space_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { Navbar } from "@/components/Navbar";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -40,7 +41,10 @@ export default function RootLayout({
       className={`${fraunces.variable} ${inter.variable} ${spaceMono.variable} ${newsreader.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans bg-neutral-bg text-text">
-        <Providers>{children}</Providers>
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );
