@@ -7,9 +7,11 @@ import { LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { PiChatCircleDotsDuotone } from "react-icons/pi";
 import { Button } from "./ui/Button";
 import { useAuth } from "@/context/AuthContext";
+import { AIChatWidget } from "./AIChatWidget";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const isLoggedIn = !!user;
@@ -72,9 +74,18 @@ export function Navbar() {
           <button className="hidden lg:flex p-2 text-neutral-bg hover:text-accent transition-colors rounded-full" aria-label="Search">
             <LuSearch size={20} />
           </button>
-          <button className="flex items-center gap-2 p-2 text-accent hover:text-accent-hover transition-colors rounded-full" aria-label="AI Assistant">
-            <PiChatCircleDotsDuotone size={24} />
-          </button>
+          
+          <div className="relative flex">
+            <button 
+              className={`flex items-center gap-2 p-2 transition-colors rounded-full ${isChatOpen ? 'bg-accent text-white' : 'text-accent hover:text-accent-hover'}`}
+              aria-label="AI Assistant"
+              onClick={() => setIsChatOpen(!isChatOpen)}
+            >
+              <PiChatCircleDotsDuotone size={24} />
+            </button>
+            <AIChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
+          </div>
+
           {!isLoggedIn ? (
             <div className="hidden sm:flex">
               <Link href="/login">
