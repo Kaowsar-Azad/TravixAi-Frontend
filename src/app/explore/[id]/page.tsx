@@ -196,6 +196,13 @@ export default function DetailsPage() {
                 </div>
               )}
 
+              {bookingStatus === "Confirmed" && (
+                <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-xl flex items-start gap-2 shadow-sm">
+                  <PiCheckCircleDuotone size={18} className="text-emerald-500 shrink-0 mt-0.5" />
+                  <span>Your booking request has been confirmed by the agent! Enjoy your trip!</span>
+                </div>
+              )}
+
               <Button 
                 variant="cta" 
                 className={`w-full mb-4 ${
