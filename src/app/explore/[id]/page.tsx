@@ -1,6 +1,5 @@
 "use client";
 
-import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { 
@@ -13,9 +12,6 @@ import { TrendChart } from "@/components/charts/TrendChart";
 import { MatchScore } from "@/components/ui/MatchScore";
 
 export default function DetailsPage() {
-  const params = useParams();
-  const id = params?.id as string;
-
   return (
     <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">

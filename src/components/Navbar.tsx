@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LuMenu, LuSearch, LuX } from "react-icons/lu";
-import { PiChatCircleDotsDuotone } from "react-icons/pi";
 import { Button } from "./ui/Button";
 import { useAuth } from "@/context/AuthContext";
 

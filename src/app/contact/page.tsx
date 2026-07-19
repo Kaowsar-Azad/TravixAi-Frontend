@@ -8,8 +8,7 @@ export default function ContactPage() {
     <div className="flex flex-col bg-neutral-bg">
       <section className="bg-primary text-neutral-bg py-20 px-6">
         <div className="max-w-4xl mx-auto text-center">
-          <h1 className="font-display font-semibold text-5xl mb-4">Get in Touch</h1>
-          <p className="text-lg opacity-90">We'd love to hear from you. Reach out with any questions or feedback.</p>
+          <p className="text-lg opacity-90">We&apos;d love to hear from you. Reach out with any questions or feedback.</p>
         </div>
       </section>
 

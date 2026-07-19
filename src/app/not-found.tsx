@@ -12,7 +12,7 @@ export default function NotFound() {
         <h1 className="font-display font-semibold text-7xl text-primary mb-2">404</h1>
         <h2 className="font-display font-semibold text-2xl text-text mb-4">Lost in translation?</h2>
         <p className="text-text-muted mb-8">
-          The page you are looking for doesn't exist or has been moved to another destination.
+          The page you are looking for doesn&apos;t exist or has been moved to another destination.
         </p>
         <Link href="/" className="w-full">
           <Button variant="primary" className="w-full">Return Home</Button>

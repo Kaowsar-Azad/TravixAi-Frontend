@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/Button";
 
 const TEAM = [
   { name: "Sarah Connor", role: "CEO & Founder", image: "https://i.pravatar.cc/300?u=a" },
@@ -14,7 +13,7 @@ export default function AboutPage() {
       <section className="bg-primary text-neutral-bg py-24 px-6">
         <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
           <h1 className="font-display font-semibold text-5xl md:text-6xl mb-6">Redefining Travel with AI</h1>
-          <p className="text-xl opacity-90 max-w-2xl">We believe technology shouldn't just book your trips, it should inspire them.</p>
+          <p className="text-xl opacity-90 max-w-2xl">We believe technology shouldn&apos;t just book your trips, it should inspire them.</p>
         </div>
       </section>
 

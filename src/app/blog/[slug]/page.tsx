@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/Button";
 
 export default function BlogPost() {
   return (
@@ -15,7 +14,7 @@ export default function BlogPost() {
 
         <div className="prose prose-lg max-w-none text-text font-serif leading-relaxed" style={{ fontFamily: "var(--font-newsreader)" }}>
           <p className="text-xl text-text-muted mb-6">
-            Artificial Intelligence is no longer a sci-fi concept. It's here, and it's completely transforming the travel industry. From smart itineraries to personalized recommendations, the way we plan our trips is evolving.
+            Artificial Intelligence is no longer a sci-fi concept. It&apos;s here, and it&apos;s completely transforming the travel industry. From smart itineraries to personalized recommendations, the way we plan our trips is evolving.
           </p>
           <p className="mb-6">
             Imagine waking up and knowing exactly what the perfect day in a new city looks like for you. Not a generic top 10 list, but a curated experience based on your love for modern art, vegan food, and sunset viewpoints. That is the power of AI.
@@ -25,7 +24,7 @@ export default function BlogPost() {
             Travel agencies of the past relied on human memory and static brochures. Today, machine learning models process millions of reviews, weather patterns, and traffic updates in milliseconds to build dynamic routes that adapt on the fly.
           </p>
           <blockquote className="border-l-4 border-accent pl-6 italic text-xl text-primary my-8">
-            "The best travel companion is one that knows you better than you know yourself."
+            &quot;The best travel companion is one that knows you better than you know yourself.&quot;
           </blockquote>
           <p className="mb-6">
             As we move towards 2030, expect to see even more immersive technologies like AR-powered translation and predictive budgeting directly integrated into your travel assistant.

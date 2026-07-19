@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 interface User {
   name: string;
@@ -22,12 +22,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     // Check local storage for mock session on mount
     const session = localStorage.getItem("travix_demo_session");
     if (session) {
+      // eslint-disable-next-line
       setUser(JSON.parse(session));
     }
     setIsLoading(false);
