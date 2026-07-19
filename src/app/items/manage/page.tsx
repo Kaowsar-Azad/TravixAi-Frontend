@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PiTrashDuotone, PiEyeDuotone, PiPlusDuotone } from "react-icons/pi";
 import { BudgetChart } from "@/components/charts/BudgetChart";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, usePathname } from "next/navigation";
 
 const MOCK_PLANS = [
   { id: "1", title: "Santorini Dream Vacation", price: "$1,200", duration: "5 Days", date: "Oct 12, 2026", status: "Active" },
@@ -14,6 +16,18 @@ const MOCK_PLANS = [
 ];
 
 export default function ManagePlansPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push(`/login?next=${pathname}`);
+    }
+  }, [user, isLoading, router, pathname]);
+
+  if (isLoading || !user) return null;
+
   return (
     <div className="flex-1 bg-neutral-bg py-12 px-6 lg:px-8">
       <div className="max-w-6xl mx-auto flex flex-col gap-8">

@@ -7,8 +7,22 @@ import {
   PiMapPinLine, PiCurrencyDollarDuotone, PiImageDuotone, 
   PiCalendarBlankDuotone, PiTextTDuotone
 } from "react-icons/pi";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
 
 export default function AddPlanPage() {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push(`/login?next=${pathname}`);
+    }
+  }, [user, isLoading, router, pathname]);
+
+  if (isLoading || !user) return null;
   return (
     <div className="flex-1 bg-neutral-bg py-12 px-6 lg:px-8">
       <div className="max-w-3xl mx-auto flex flex-col gap-8">

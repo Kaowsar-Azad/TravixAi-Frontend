@@ -1,10 +1,31 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PiEnvelopeDuotone, PiLockKeyDuotone, PiSparkleDuotone } from "react-icons/pi";
 import { FcGoogle } from "react-icons/fc";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextRoute = searchParams?.get("next") || "/";
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleDemoLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
+    setTimeout(() => {
+      login();
+      router.push(nextRoute);
+    }, 800);
+  };
+
   return (
     <div className="flex-1 flex min-h-[calc(100vh-64px)]">
       {/* Left side - Marketing/Image */}
@@ -41,18 +62,20 @@ export default function LoginPage() {
               <div className="flex-1 border-t border-border"></div>
             </div>
 
-            <form className="flex flex-col gap-4">
+            <form className="flex flex-col gap-4" onSubmit={handleDemoLogin}>
               <Input 
                 label="Email Address" 
                 type="email" 
-                placeholder="you@example.com" 
+                placeholder="demo@travix.ai" 
                 icon={<PiEnvelopeDuotone size={20} />} 
+                defaultValue="demo@travix.ai"
               />
               <Input 
                 label="Password" 
                 type="password" 
                 placeholder="••••••••" 
                 icon={<PiLockKeyDuotone size={20} />} 
+                defaultValue="password123"
               />
               
               <div className="flex items-center justify-between mt-2">
@@ -63,10 +86,12 @@ export default function LoginPage() {
                 <Link href="#" className="text-sm font-medium text-accent hover:underline">Forgot password?</Link>
               </div>
 
-              <Button variant="primary" className="w-full mt-4">Sign In</Button>
+              <Button variant="primary" type="submit" className="w-full mt-4" disabled={isLoading}>
+                {isLoading ? "Signing in..." : "Sign In"}
+              </Button>
             </form>
             
-            <Button variant="cta" className="w-full" icon={<PiSparkleDuotone size={20} />}>
+            <Button variant="cta" className="w-full" icon={<PiSparkleDuotone size={20} />} onClick={() => handleDemoLogin()} disabled={isLoading}>
               Demo Login
             </Button>
           </div>
