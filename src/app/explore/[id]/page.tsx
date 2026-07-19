@@ -15,6 +15,7 @@ import { MatchScore } from "@/components/ui/MatchScore";
 import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export default function DetailsPage() {
   const params = useParams();
@@ -89,14 +90,14 @@ export default function DetailsPage() {
     setIsBooking(true);
     try {
       await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
-      alert("Booking successful! Enjoy your trip!");
+      toast.success("Booking successful! Enjoy your trip!");
       setHasBooked(true);
     } catch (error: any) {
       if (error.response?.data?.error === "You have already booked this plan") {
-        alert("You have already booked this plan.");
+        toast.warning("You have already booked this plan.");
         setHasBooked(true);
       } else {
-        alert("Failed to book plan. Please try again.");
+        toast.error("Failed to book plan. Please try again.");
       }
     } finally {
       setIsBooking(false);

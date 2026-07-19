@@ -13,6 +13,7 @@ import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { LuCalendarDays, LuUsers } from "react-icons/lu";
+import { toast } from "react-toastify";
 
 export default function ManagePlansPage() {
   const { user, isLoading } = useAuth();
@@ -58,7 +59,7 @@ export default function ManagePlansPage() {
   }, [user]);
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this travel plan? This action cannot be undone.")) return;
+    if (!window.confirm("Are you sure you want to delete this travel plan? This action cannot be undone.")) return;
     
     setDeletingId(id);
     try {
@@ -66,9 +67,10 @@ export default function ManagePlansPage() {
         withCredentials: true
       });
       setPlans(prev => prev.filter(p => p._id !== id));
+      toast.success("Plan deleted successfully");
     } catch (error) {
       console.error("Failed to delete plan", error);
-      alert("Failed to delete the plan. Please try again.");
+      toast.error("Failed to delete the plan. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -85,7 +87,7 @@ export default function ManagePlansPage() {
       setBookings(res.data);
     } catch (error) {
       console.error("Failed to fetch bookings", error);
-      alert("Failed to load bookings.");
+      toast.error("Failed to load bookings.");
     } finally {
       setIsFetchingBookings(false);
     }

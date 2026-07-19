@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { PiEnvelopeDuotone, PiLockKeyDuotone, PiSparkleDuotone } from "react-icons/pi";
 import { FcGoogle } from "react-icons/fc";
 import { signIn } from "@/lib/auth-client";
+import { toast } from "react-toastify";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -30,17 +31,22 @@ export default function LoginPage() {
         password,
         callbackURL: nextRoute,
         fetchOptions: {
-          onError: (ctx) => {
-            setError(ctx.error.message || "Invalid credentials.");
+          onError: (ctx: any) => {
+            const msg = ctx.error.message || "Invalid credentials.";
+            setError(msg);
+            toast.error(msg);
           },
           onSuccess: () => {
+            toast.success("Logged in successfully!");
             router.push(nextRoute);
-            router.refresh();
           }
         }
       });
     } catch (err: any) {
-      setError(err.message || "An unexpected error occurred.");
+      console.error(err);
+      const msg = err.message || "An unexpected error occurred.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

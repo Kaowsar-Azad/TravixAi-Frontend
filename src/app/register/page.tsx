@@ -9,6 +9,7 @@ import { PiEnvelopeDuotone, PiLockKeyDuotone, PiUserDuotone, PiImageDuotone, PiU
 import { FcGoogle } from "react-icons/fc";
 import { signUp } from "@/lib/auth-client";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -72,9 +73,12 @@ export default function RegisterPage() {
         role,
         fetchOptions: {
           onError: (ctx: any) => {
-            setError(ctx.error.message || "Something went wrong during registration.");
+            const msg = ctx.error.message || "Something went wrong during registration.";
+            setError(msg);
+            toast.error(msg);
           },
           onSuccess: () => {
+            toast.success("Account created successfully!");
             router.push("/login");
           }
         }
@@ -87,7 +91,9 @@ export default function RegisterPage() {
       await signUp.email(signUpData);
     } catch (err: any) {
       console.error(err);
-      setError(err.response?.data?.error || err.message || "An unexpected error occurred.");
+      const msg = err.response?.data?.error || err.message || "An unexpected error occurred.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }

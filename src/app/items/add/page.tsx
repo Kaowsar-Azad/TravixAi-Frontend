@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function AddPlanPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -115,10 +116,12 @@ export default function AddPlanPage() {
       });
 
       if (planRes.status === 201) {
-        router.push("/explore");
+        toast.success("Travel plan created successfully!");
+        router.push("/items/manage");
       }
     } catch(err: any) {
       console.error(err);
+      toast.error(err.response?.data?.error || err.message || "Failed to create travel plan");
       setError(err.response?.data?.error || err.message || "Failed to create travel plan");
     } finally {
       setIsLoading(false);

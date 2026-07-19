@@ -8,14 +8,16 @@ import {
   PiXCircleDuotone, PiPlusDuotone
 } from "react-icons/pi";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, usePathname } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export default function EditPlanPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
+  const pathname = usePathname();
   const id = params?.id as string;
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,10 +148,12 @@ export default function EditPlanPage() {
       });
 
       if (planRes.status === 200) {
+        toast.success("Travel plan updated successfully!");
         router.push("/items/manage");
       }
     } catch(err: any) {
       console.error(err);
+      toast.error(err.response?.data?.error || err.message || "Failed to update travel plan");
       setError(err.response?.data?.error || err.message || "Failed to update travel plan");
     } finally {
       setIsLoading(false);
