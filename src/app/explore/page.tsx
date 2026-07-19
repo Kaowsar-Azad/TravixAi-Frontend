@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { MatchScore } from "@/components/ui/MatchScore";
 import { 
   PiMagnifyingGlassDuotone, PiFadersDuotone, PiStarFill
 } from "react-icons/pi";
@@ -140,7 +141,11 @@ export default function ExplorePage() {
                           <span className="font-semibold text-primary">{dest.price}</span>
                         </>
                       }
-                    />
+                    >
+                      <div className="mt-2">
+                        <MatchScore score={dest.rating > 4.8 ? 95 : 82} />
+                      </div>
+                    </Card>
                   </Link>
                 </motion.div>
               ))}

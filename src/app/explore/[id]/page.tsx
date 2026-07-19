@@ -10,6 +10,7 @@ import {
 import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
 import { TrendChart } from "@/components/charts/TrendChart";
+import { MatchScore } from "@/components/ui/MatchScore";
 
 export default function DetailsPage() {
   const params = useParams();
@@ -26,7 +27,10 @@ export default function DetailsPage() {
             <span>/</span>
             <span className="text-text">Destination Details</span>
           </div>
-          <h1 className="font-display font-semibold text-4xl md:text-5xl text-primary">Santorini Dream Vacation</h1>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h1 className="font-display font-semibold text-4xl md:text-5xl text-primary">Santorini Dream Vacation</h1>
+            <MatchScore score={95} />
+          </div>
           <div className="flex flex-wrap items-center gap-4 mt-4 text-sm font-medium">
             <span className="flex items-center gap-1 text-text-muted"><PiMapPinLine size={18} /> Santorini, Greece</span>
             <span className="flex items-center gap-1 text-accent"><PiStarFill size={18} /> 4.9 (120 reviews)</span>
