@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -11,8 +12,28 @@ import {
   PiStarFill
 } from "react-icons/pi";
 import { LuCalendarDays } from "react-icons/lu";
+import Link from "next/link";
+import axios from "axios";
 
 export default function Home() {
+  const [trendingItems, setTrendingItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/items");
+        // Get the latest 4 items for trending
+        setTrendingItems(res.data.slice(0, 4));
+      } catch (err) {
+        console.error("Failed to fetch trending items:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
   return (
     <div className="flex flex-col w-full overflow-hidden">
       {/* Hero Section */}
@@ -42,7 +63,9 @@ export default function Home() {
             
             <div className="flex flex-col sm:flex-row gap-4 mt-4 justify-center lg:justify-start">
               <Button variant="cta" size="lg" icon={<PiSparkleDuotone size={20} />}>Plan My Trip</Button>
-              <Button variant="secondary" size="lg">Explore Destinations</Button>
+              <Link href="/explore">
+                <Button variant="secondary" size="lg">Explore Destinations</Button>
+              </Link>
             </div>
           </div>
           
@@ -69,43 +92,52 @@ export default function Home() {
             </div>
           </div>
           
-          <motion.div 
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-            variants={{
-              visible: { transition: { staggerChildren: 0.1 } }
-            }}
-          >
-            {[
-              { title: "Santorini, Greece", img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5f1?w=600&q=80", price: "$1,200", days: "5 Days", rating: "4.9" },
-              { title: "Bali, Indonesia", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", price: "$850", days: "7 Days", rating: "4.8" },
-              { title: "Swiss Alps", img: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=600&q=80", price: "$2,100", days: "4 Days", rating: "4.9" },
-              { title: "Kyoto, Japan", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80", price: "$1,500", days: "6 Days", rating: "4.7" },
-            ].map((dest, i) => (
-              <motion.div 
-                key={i}
-                variants={{
-                  hidden: { opacity: 0, y: 30 },
-                  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
-                }}
-                whileHover={{ y: -8, transition: { duration: 0.2 } }}
-              >
-                <Card 
-                  title={dest.title} 
-                  image={dest.img}
-                  meta={
-                    <>
-                      <span className="flex items-center gap-1 text-secondary"><LuCalendarDays size={16}/> {dest.days}</span>
-                      <span className="flex items-center gap-1 text-accent"><PiStarFill size={16}/> {dest.rating}</span>
-                      <span className="font-semibold text-primary">{dest.price}</span>
-                    </>
-                  }
-                />
-              </motion.div>
-            ))}
-          </motion.div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="animate-pulse bg-neutral-bg border border-border rounded-2xl h-[350px]"></div>
+              ))}
+            </div>
+          ) : trendingItems.length === 0 ? (
+            <div className="py-12 text-center text-text-muted border border-border rounded-2xl">
+              No trending destinations found.
+            </div>
+          ) : (
+            <motion.div 
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-100px" }}
+              variants={{
+                visible: { transition: { staggerChildren: 0.1 } }
+              }}
+            >
+              {trendingItems.map((dest) => (
+                <motion.div 
+                  key={dest._id}
+                  variants={{
+                    hidden: { opacity: 0, y: 30 },
+                    visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+                  }}
+                  whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                >
+                  <Link href={`/explore/${dest._id}`} className="block h-full">
+                    <Card 
+                      title={dest.title} 
+                      image={(dest.images && dest.images.length > 0) ? dest.images[0] : (dest.imageUrl || "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5f1?w=600&q=80")}
+                      meta={
+                        <>
+                          <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
+                          <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
+                          <span className="font-semibold text-primary whitespace-nowrap">{dest.price}</span>
+                        </>
+                      }
+                    />
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       </section>
       
@@ -161,7 +193,9 @@ export default function Home() {
       <section className="py-24 px-6 lg:px-8 bg-neutral-bg text-center">
         <h2 className="font-display font-semibold text-4xl text-primary mb-6">Ready for takeoff?</h2>
         <p className="text-text-muted mb-8 max-w-xl mx-auto text-lg">Join thousands of smart travelers who are already exploring the world with their personal AI travel assistant.</p>
-        <Button variant="cta" size="lg">Start Planning Now</Button>
+        <Link href="/register">
+          <Button variant="cta" size="lg">Start Planning Now</Button>
+        </Link>
       </section>
     </div>
   );

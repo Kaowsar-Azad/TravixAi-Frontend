@@ -25,11 +25,25 @@ export function Navbar() {
   const loggedInRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore", path: "/explore" },
-    { name: "Add Plan", path: "/items/add" },
-    { name: "Manage Plans", path: "/items/manage" },
-    { name: "About", path: "/about" },
-    { name: "AI Assistant", path: "/ai-assistant" },
   ];
+
+  if (user?.role === "travel_agent" || user?.role === "admin") {
+    loggedInRoutes.push(
+      { name: "Add Plan", path: "/items/add" },
+      { name: "Manage Plans", path: "/items/manage" }
+    );
+  }
+
+  if (user?.role === "admin") {
+    loggedInRoutes.push(
+      { name: "Dashboard", path: "/admin/dashboard" }
+    );
+  }
+
+  loggedInRoutes.push(
+    { name: "About", path: "/about" },
+    { name: "AI Assistant", path: "/ai-assistant" }
+  );
 
   const routes = isLoggedIn ? loggedInRoutes : loggedOutRoutes;
 
@@ -86,12 +100,23 @@ export function Navbar() {
           ) : (
             <div className="hidden sm:flex items-center gap-4 relative group">
               <div className="flex items-center gap-2 cursor-pointer">
-                <img src={user.avatar} alt="Profile" className="w-8 h-8 rounded-full border border-border" />
+                {user.image ? (
+                  <img src={user.image} alt="Profile" className="w-8 h-8 rounded-full border border-border bg-white object-cover" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full border border-border bg-accent flex items-center justify-center text-white font-bold text-sm">
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
                 <span className="text-sm font-medium text-neutral-bg">{user.name}</span>
               </div>
               {/* Dropdown Profile */}
               <div className="absolute top-full right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col p-2">
-                <Link href="/items/manage" className="px-4 py-2 text-sm text-text hover:bg-neutral-bg rounded-lg">Manage Trips</Link>
+                {(user?.role === "travel_agent" || user?.role === "admin") && (
+                  <Link href="/items/manage" className="px-4 py-2 text-sm text-text hover:bg-neutral-bg rounded-lg">Manage Trips</Link>
+                )}
+                {user?.role === "admin" && (
+                  <Link href="/admin/dashboard" className="px-4 py-2 text-sm text-text hover:bg-neutral-bg rounded-lg">Admin Dashboard</Link>
+                )}
                 <button onClick={logout} className="px-4 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg text-left">Logout</button>
               </div>
             </div>
@@ -125,7 +150,13 @@ export function Navbar() {
           ) : (
             <div className="mt-4 border-t border-primary-hover pt-4 flex flex-col gap-4">
               <div className="flex items-center gap-3 px-2">
-                <img src={user.avatar} alt="Profile" className="w-10 h-10 rounded-full border border-border" />
+                {user.image ? (
+                  <img src={user.image} alt="Profile" className="w-10 h-10 rounded-full border border-border bg-white object-cover" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full border border-border bg-accent flex items-center justify-center text-white font-bold text-lg">
+                    {user.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </div>
+                )}
                 <span className="font-medium text-neutral-bg">{user.name}</span>
               </div>
               <button onClick={() => { logout(); setIsMenuOpen(false); }} className="w-full text-left font-medium text-lg py-2 text-destructive px-2">

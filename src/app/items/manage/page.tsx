@@ -1,105 +1,316 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { PiTrashDuotone, PiEyeDuotone, PiPlusDuotone } from "react-icons/pi";
-import { BudgetChart } from "@/components/charts/BudgetChart";
+import { 
+  PiTrashDuotone, PiEyeDuotone, PiPlusDuotone, PiPencilDuotone, 
+  PiCurrencyDollarDuotone, PiCalendarBlankDuotone, PiMapPinLine
+} from "react-icons/pi";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
-
-const MOCK_PLANS = [
-  { id: "1", title: "Santorini Dream Vacation", price: "$1,200", duration: "5 Days", date: "Oct 12, 2026", status: "Active" },
-  { id: "2", title: "Bali Adventure Trip", price: "$850", duration: "7 Days", date: "Nov 05, 2026", status: "Active" },
-  { id: "3", title: "Swiss Alps Ski Retreat", price: "$2,100", duration: "4 Days", date: "Dec 20, 2026", status: "Draft" },
-];
+import axios from "axios";
+import { motion, AnimatePresence } from "framer-motion";
+import { LuCalendarDays, LuUsers } from "react-icons/lu";
 
 export default function ManagePlansPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  
+  const [plans, setPlans] = useState<any[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Bookings Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [isFetchingBookings, setIsFetchingBookings] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !user) {
-      router.push(`/login?next=${pathname}`);
+    if (!isLoading) {
+      if (!user) {
+        router.push(`/login?next=${pathname}`);
+      } else if (user.role !== "admin" && user.role !== "travel_agent") {
+        router.push("/");
+      }
     }
   }, [user, isLoading, router, pathname]);
 
+  useEffect(() => {
+    if (user) {
+      const fetchMyPlans = async () => {
+        try {
+          const res = await axios.get("http://localhost:5000/api/items/my-plans", {
+            withCredentials: true
+          });
+          setPlans(res.data);
+        } catch (error) {
+          console.error("Failed to fetch plans", error);
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchMyPlans();
+    }
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this travel plan? This action cannot be undone.")) return;
+    
+    setDeletingId(id);
+    try {
+      await axios.delete(`http://localhost:5000/api/items/${id}`, {
+        withCredentials: true
+      });
+      setPlans(prev => prev.filter(p => p._id !== id));
+    } catch (error) {
+      console.error("Failed to delete plan", error);
+      alert("Failed to delete the plan. Please try again.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleViewBookings = async (planId: string) => {
+    setSelectedPlanId(planId);
+    setIsModalOpen(true);
+    setIsFetchingBookings(true);
+    try {
+      const res = await axios.get(`http://localhost:5000/api/bookings/plan/${planId}`, {
+        withCredentials: true
+      });
+      setBookings(res.data);
+    } catch (error) {
+      console.error("Failed to fetch bookings", error);
+      alert("Failed to load bookings.");
+    } finally {
+      setIsFetchingBookings(false);
+    }
+  };
+
   if (isLoading || !user) return null;
 
+  // Animation variants
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+  const itemVariant = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  };
+
   return (
-    <div className="flex-1 bg-neutral-bg py-12 px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
+    <div className="flex-1 bg-neutral-bg py-12 px-6 lg:px-8 min-h-screen">
+      <div className="max-w-6xl mx-auto flex flex-col gap-10">
         
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
           <div>
-            <h1 className="font-display font-semibold text-3xl md:text-4xl text-primary">Manage Plans</h1>
-            <p className="text-text-muted mt-2">View, edit, and delete your created travel plans.</p>
+            <h1 className="font-display font-semibold text-3xl md:text-4xl text-primary mb-2">My Travel Plans</h1>
+            <p className="text-text-muted text-sm md:text-base">Manage, update, or remove your personal itineraries.</p>
           </div>
           <Link href="/items/add">
-            <Button variant="primary" icon={<PiPlusDuotone size={20} />}>Add New Plan</Button>
+            <Button variant="primary" icon={<PiPlusDuotone size={20} />}>Create New Plan</Button>
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-2">
-          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
-            <h3 className="font-display font-semibold text-xl mb-4">Estimated Expenses</h3>
-            <BudgetChart />
+        {/* Loading State */}
+        {isFetching && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="animate-pulse bg-surface h-72 rounded-2xl border border-border"></div>
+            ))}
           </div>
-          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
-            <h3 className="font-display font-semibold text-xl mb-2">AI Smart Savings</h3>
-            <p className="text-5xl font-display font-semibold text-success mt-4">$450</p>
-            <p className="text-text-muted mt-4 max-w-xs">Saved on average compared to traditional travel agencies by optimizing flights and hotels.</p>
-          </div>
-        </div>
+        )}
 
-        <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-primary/5 border-b border-border text-sm text-text-muted">
-                <th className="px-6 py-4 font-medium">Title</th>
-                <th className="px-6 py-4 font-medium">Price</th>
-                <th className="px-6 py-4 font-medium">Duration</th>
-                <th className="px-6 py-4 font-medium hidden sm:table-cell">Created At</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-                <th className="px-6 py-4 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {MOCK_PLANS.map((plan) => (
-                <tr key={plan.id} className="border-b border-border/50 hover:bg-neutral-bg/50 transition-colors group">
-                  <td className="px-6 py-4 font-medium text-primary">{plan.title}</td>
-                  <td className="px-6 py-4 text-text">{plan.price}</td>
-                  <td className="px-6 py-4 text-text">{plan.duration}</td>
-                  <td className="px-6 py-4 text-text-muted hidden sm:table-cell">{plan.date}</td>
-                  <td className="px-6 py-4">
-                    <Badge variant={plan.status === "Active" ? "accent" : "secondary"}>{plan.status}</Badge>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                      <Link href={`/explore/${plan.id}`}>
-                        <button className="p-2 text-secondary hover:bg-secondary/10 rounded-lg transition-colors" title="View Details">
-                          <PiEyeDuotone size={20} />
-                        </button>
-                      </Link>
-                      <button className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors" title="Delete">
-                        <PiTrashDuotone size={20} />
-                      </button>
+        {/* Empty State */}
+        {!isFetching && plans.length === 0 && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center p-16 bg-surface border border-border border-dashed rounded-3xl text-center"
+          >
+            <div className="w-24 h-24 mb-6 rounded-full bg-primary/5 flex items-center justify-center text-primary">
+              <PiMapPinLine size={48} />
+            </div>
+            <h3 className="text-2xl font-display font-semibold text-primary mb-3">No Plans Yet</h3>
+            <p className="text-text-muted max-w-md mb-8">
+              You haven't created any travel plans. Start designing your perfect getaway itinerary today!
+            </p>
+            <Link href="/items/add">
+              <Button variant="cta" icon={<PiPlusDuotone size={20} />}>Create Your First Plan</Button>
+            </Link>
+          </motion.div>
+        )}
+
+        {/* Data Grid */}
+        {!isFetching && plans.length > 0 && (
+          <motion.div 
+            variants={container}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {plans.map((plan) => {
+              const coverImage = (plan.images && plan.images.length > 0) ? plan.images[0] : (plan.imageUrl || "https://images.unsplash.com/photo-1488085061387-422e29b40080?w=600&q=80");
+              
+              return (
+                <motion.div 
+                  key={plan._id} 
+                  variants={itemVariant}
+                  className="group flex flex-col bg-surface border border-border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300 relative"
+                >
+                  {/* Image Header */}
+                  <div className="h-40 relative overflow-hidden bg-neutral-bg">
+                    <img src={coverImage} alt={plan.title} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                    <div className="absolute top-3 left-3">
+                      <Badge variant="secondary" className="backdrop-blur-md bg-white/70 text-primary border-none shadow-sm">
+                        {plan.category || "Trip"}
+                      </Badge>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          
-          {MOCK_PLANS.length === 0 && (
-            <div className="p-12 text-center flex flex-col items-center justify-center text-text-muted">
-              <p>No travel plans found.</p>
-              <Link href="/items/add" className="text-accent hover:underline mt-2">Create your first plan</Link>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="font-display font-semibold text-lg text-primary mb-2 line-clamp-1" title={plan.title}>
+                      {plan.title}
+                    </h3>
+                    
+                    <div className="flex flex-col gap-2 mt-2">
+                      <div className="flex items-center gap-2 text-sm text-text-muted">
+                        <LuCalendarDays size={18} className="text-secondary" />
+                        <span>{plan.duration}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-text-muted">
+                        <PiCurrencyDollarDuotone size={18} className="text-accent" />
+                        <span className="font-semibold text-text">{plan.price}</span>
+                      </div>
+                      <div className="text-xs text-text-muted/60 mt-2 font-mono">
+                        Created: {new Date(plan.createdAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                    
+                    {/* Action Footer */}
+                    <div className="mt-6 pt-4 border-t border-dashed border-border flex justify-between items-center">
+                      <div className="flex gap-2">
+                        <Link href={`/explore/${plan._id}`}>
+                          <Button variant="secondary" className="!px-3 !py-1.5 text-sm" icon={<PiEyeDuotone size={16} />}>View</Button>
+                        </Link>
+                        <Button 
+                          variant="secondary" 
+                          className="!px-3 !py-1.5 text-sm !bg-accent/10 !text-accent hover:!bg-accent/20 border-none" 
+                          icon={<LuUsers size={16} />}
+                          onClick={() => handleViewBookings(plan._id)}
+                        >
+                          Bookings
+                        </Button>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Link href={`/items/edit/${plan._id}`}>
+                          <button className="p-2 text-text-muted hover:text-primary hover:bg-primary/5 rounded-lg transition-colors" title="Edit Plan">
+                            <PiPencilDuotone size={20} />
+                          </button>
+                        </Link>
+                        <button 
+                          onClick={() => handleDelete(plan._id)}
+                          disabled={deletingId === plan._id}
+                          className="p-2 text-text-muted hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors disabled:opacity-50"
+                          title="Delete Plan"
+                        >
+                          <PiTrashDuotone size={20} />
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        )}
+
+        {/* Bookings Modal */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }} 
+                onClick={() => setIsModalOpen(false)}
+                className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              />
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative bg-surface w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              >
+                <div className="p-6 border-b border-border flex justify-between items-center bg-neutral-bg">
+                  <div>
+                    <h2 className="text-xl font-display font-semibold text-primary">Booking Details</h2>
+                    <p className="text-sm text-text-muted mt-1">People who have booked this plan</p>
+                  </div>
+                  <button onClick={() => setIsModalOpen(false)} className="p-2 bg-surface hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                  </button>
+                </div>
+                
+                <div className="p-6 overflow-y-auto flex-1">
+                  {isFetchingBookings ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : bookings.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="w-16 h-16 bg-neutral-bg rounded-full flex items-center justify-center mx-auto mb-4 text-text-muted">
+                        <LuUsers size={32} />
+                      </div>
+                      <h3 className="text-lg font-medium text-text">No bookings yet</h3>
+                      <p className="text-text-muted text-sm mt-1">When someone books this plan, they will appear here.</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {bookings.map((booking: any) => (
+                        <div key={booking._id} className="flex items-center justify-between p-4 bg-neutral-bg border border-border rounded-2xl hover:border-accent/30 transition-colors">
+                          <div className="flex items-center gap-4">
+                            {booking.user?.image ? (
+                              <img src={booking.user.image} alt={booking.user.name} className="w-12 h-12 rounded-full border border-border object-cover" />
+                            ) : (
+                              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
+                                {booking.user?.name?.charAt(0) || "U"}
+                              </div>
+                            )}
+                            <div>
+                              <h4 className="font-medium text-text">{booking.user?.name || "Unknown User"}</h4>
+                              <p className="text-sm text-text-muted">{booking.user?.email}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-200 mb-1">
+                              {booking.status}
+                            </Badge>
+                            <p className="text-xs text-text-muted">
+                              {new Date(booking.bookingDate).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             </div>
           )}
-        </div>
+        </AnimatePresence>
 
       </div>
     </div>

@@ -33,7 +33,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           {children && <div className="mb-4">{children}</div>}
           
           {meta && (
-            <div className="mt-auto pt-4 border-t border-dashed border-border flex items-center justify-between text-sm font-mono text-text-muted">
+            <div className="mt-auto pt-4 border-t border-dashed border-border flex items-center justify-between gap-2 text-sm font-mono text-text-muted flex-wrap">
               {meta}
             </div>
           )}

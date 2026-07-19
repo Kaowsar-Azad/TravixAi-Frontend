@@ -7,23 +7,43 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PiEnvelopeDuotone, PiLockKeyDuotone, PiSparkleDuotone } from "react-icons/pi";
 import { FcGoogle } from "react-icons/fc";
-import { useAuth } from "@/context/AuthContext";
+import { signIn } from "@/lib/auth-client";
 
 export default function LoginPage() {
-  const { login } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextRoute = searchParams?.get("next") || "/";
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleDemoLogin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
-      login();
-      router.push(nextRoute);
-    }, 800);
+    setError("");
+
+    try {
+      await signIn.email({
+        email,
+        password,
+        callbackURL: nextRoute,
+        fetchOptions: {
+          onError: (ctx) => {
+            setError(ctx.error.message || "Invalid credentials.");
+          },
+          onSuccess: () => {
+            router.push(nextRoute);
+            router.refresh();
+          }
+        }
+      });
+    } catch (err: any) {
+      setError(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -62,20 +82,30 @@ export default function LoginPage() {
               <div className="flex-1 border-t border-border"></div>
             </div>
 
-            <form className="flex flex-col gap-4" onSubmit={handleDemoLogin}>
+            {error && (
+              <div className="p-3 rounded-lg bg-red-100 border border-red-200 text-red-600 text-sm">
+                {error}
+              </div>
+            )}
+
+            <form className="flex flex-col gap-4" onSubmit={handleLogin}>
               <Input 
                 label="Email Address" 
                 type="email" 
-                placeholder="demo@travix.ai" 
+                placeholder="you@example.com" 
                 icon={<PiEnvelopeDuotone size={20} />} 
-                defaultValue="demo@travix.ai"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
               <Input 
                 label="Password" 
                 type="password" 
                 placeholder="••••••••" 
                 icon={<PiLockKeyDuotone size={20} />} 
-                defaultValue="password123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
               />
               
               <div className="flex items-center justify-between mt-2">
@@ -90,10 +120,6 @@ export default function LoginPage() {
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
             </form>
-            
-            <Button variant="cta" className="w-full" icon={<PiSparkleDuotone size={20} />} onClick={() => handleDemoLogin()} disabled={isLoading}>
-              Demo Login
-            </Button>
           </div>
 
           <p className="text-center text-sm text-text-muted mt-4">

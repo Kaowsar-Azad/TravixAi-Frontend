@@ -8,17 +8,20 @@ import {
   PiXCircleDuotone, PiPlusDuotone
 } from "react-icons/pi";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 
-export default function AddPlanPage() {
+export default function EditPlanPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
+  const params = useParams();
+  const id = params?.id as string;
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(true);
   const [error, setError] = useState("");
   
   // Form State
@@ -40,6 +43,41 @@ export default function AddPlanPage() {
       }
     }
   }, [user, authLoading, router, pathname]);
+
+  useEffect(() => {
+    if (id && user) {
+      const fetchItem = async () => {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/items/${id}`);
+          const item = res.data;
+          
+          if (item.userId !== user.id) {
+            router.push("/items/manage"); // Not owner
+            return;
+          }
+
+          setTitle(item.title);
+          setShortDescription(item.shortDescription);
+          setFullDescription(item.fullDescription || "");
+          setPrice(item.price);
+          setDuration(item.duration);
+          
+          if (item.images && Array.isArray(item.images)) {
+            setImageUrls(item.images);
+          } else if (item.imageUrl) {
+            setImageUrls([item.imageUrl]);
+          }
+
+        } catch (err) {
+          console.error("Failed to fetch item", err);
+          setError("Failed to load travel plan details.");
+        } finally {
+          setIsFetching(false);
+        }
+      };
+      fetchItem();
+    }
+  }, [id, user, router]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -77,7 +115,7 @@ export default function AddPlanPage() {
         finalImageUrls.push(currentUrl.trim());
       }
 
-      // 1. If there are files, upload them to our backend
+      // Upload new files
       if (imageFiles.length > 0) {
         const uploadPromises = imageFiles.map(async (file) => {
           const formData = new FormData();
@@ -85,53 +123,47 @@ export default function AddPlanPage() {
 
           const uploadRes = await axios.post("http://localhost:5000/api/upload", formData, {
             withCredentials: true,
-            headers: {
-              "Content-Type": "multipart/form-data"
-            }
+            headers: { "Content-Type": "multipart/form-data" }
           });
           
-          if (uploadRes.data.url) {
-            return uploadRes.data.url;
-          } else {
-            throw new Error(`Failed to get image URL for ${file.name}`);
-          }
+          if (uploadRes.data.url) return uploadRes.data.url;
+          throw new Error(`Failed to get image URL for ${file.name}`);
         });
 
         const uploadedUrls = await Promise.all(uploadPromises);
         finalImageUrls = [...finalImageUrls, ...uploadedUrls];
       }
 
-      // 2. Submit the Travel Plan to our backend
-      const planRes = await axios.post("http://localhost:5000/api/items", {
+      const planRes = await axios.put(`http://localhost:5000/api/items/${id}`, {
         title,
         shortDescription,
         fullDescription,
         price,
         duration,
         images: finalImageUrls,
-        category: "Uncategorized"
       }, {
         withCredentials: true
       });
 
-      if (planRes.status === 201) {
-        router.push("/explore");
+      if (planRes.status === 200) {
+        router.push("/items/manage");
       }
     } catch(err: any) {
       console.error(err);
-      setError(err.response?.data?.error || err.message || "Failed to create travel plan");
+      setError(err.response?.data?.error || err.message || "Failed to update travel plan");
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (authLoading || !user) return null;
+  if (authLoading || !user || isFetching) return null;
+
   return (
     <div className="flex-1 bg-neutral-bg py-12 px-6 lg:px-8">
       <div className="max-w-3xl mx-auto flex flex-col gap-8">
         <div>
-          <h1 className="font-display font-semibold text-3xl md:text-4xl text-primary">Add Travel Plan</h1>
-          <p className="text-text-muted mt-2">Create a new destination itinerary or travel package.</p>
+          <h1 className="font-display font-semibold text-3xl md:text-4xl text-primary">Edit Travel Plan</h1>
+          <p className="text-text-muted mt-2">Update your destination itinerary or travel package.</p>
         </div>
 
         <div className="bg-surface p-6 sm:p-8 rounded-2xl border border-border shadow-sm">
@@ -241,7 +273,7 @@ export default function AddPlanPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {imageUrls.map((url, idx) => (
                         <div key={`url-${idx}`} className="flex items-center justify-between p-3 border border-border rounded-lg bg-neutral-bg">
-                          <span className="text-sm text-text font-medium truncate flex-1">{url}</span>
+                          <span className="text-sm text-text font-medium truncate flex-1" title={url}>{url}</span>
                           <button type="button" onClick={() => removeUrl(idx)} className="text-text-muted hover:text-destructive transition-colors ml-4 shrink-0">
                             <PiXCircleDuotone size={20} />
                           </button>
@@ -264,7 +296,7 @@ export default function AddPlanPage() {
             <div className="flex justify-end gap-4 mt-4 pt-6 border-t border-border">
               <Button variant="secondary" type="button" onClick={() => router.back()}>Cancel</Button>
               <Button variant="primary" type="submit" disabled={isLoading}>
-                {isLoading ? "Publishing..." : "Publish Plan"}
+                {isLoading ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

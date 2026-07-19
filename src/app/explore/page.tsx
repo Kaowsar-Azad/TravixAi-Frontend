@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -11,19 +11,32 @@ import {
 } from "react-icons/pi";
 import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
-
-const MOCK_DATA = [
-  { id: "1", title: "Santorini, Greece", img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5f1?w=600&q=80", price: "$1,200", days: "5 Days", rating: "4.9", category: "Relaxation" },
-  { id: "2", title: "Bali, Indonesia", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=600&q=80", price: "$850", days: "7 Days", rating: "4.8", category: "Adventure" },
-  { id: "3", title: "Swiss Alps", img: "https://images.unsplash.com/photo-1530122037265-a5f1f91d3b99?w=600&q=80", price: "$2,100", days: "4 Days", rating: "4.9", category: "Adventure" },
-  { id: "4", title: "Kyoto, Japan", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=600&q=80", price: "$1,500", days: "6 Days", rating: "4.7", category: "Culture" },
-  { id: "5", title: "Maldives", img: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?w=600&q=80", price: "$3,200", days: "5 Days", rating: "5.0", category: "Relaxation" },
-  { id: "6", title: "Rome, Italy", img: "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=600&q=80", price: "$1,100", days: "5 Days", rating: "4.6", category: "Culture" },
-];
+import axios from "axios";
 
 export default function ExplorePage() {
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [items, setItems] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/items");
+        setItems(res.data);
+      } catch (err) {
+        console.error("Failed to fetch items:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  const filteredItems = items.filter(item => 
+    item.title.toLowerCase().includes(search.toLowerCase()) ||
+    item.shortDescription.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
@@ -55,10 +68,10 @@ export default function ExplorePage() {
           </div>
         </div>
 
-        {/* Filters Sidebar/BottomSheet & Grid */}
+        {/* Filters Sidebar & Grid */}
         <div className="flex flex-col lg:flex-row gap-8">
           
-          {/* Filters (Desktop Sidebar / Mobile Expandable) */}
+          {/* Filters */}
           <div className={`lg:w-64 flex flex-col gap-6 bg-surface p-6 rounded-2xl border border-border h-fit ${showFilters ? 'block' : 'hidden lg:flex'}`}>
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-lg text-primary">Filters</h3>
@@ -103,7 +116,7 @@ export default function ExplorePage() {
           {/* Grid */}
           <div className="flex-1">
             <div className="flex justify-between items-center mb-6">
-              <p className="text-sm text-text-muted">Showing {MOCK_DATA.length} results</p>
+              <p className="text-sm text-text-muted">Showing {filteredItems.length} results</p>
               <select className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent">
                 <option>Sort by: Recommended</option>
                 <option>Price: Low to High</option>
@@ -112,48 +125,62 @@ export default function ExplorePage() {
               </select>
             </div>
 
-            <motion.div 
-              className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                visible: { transition: { staggerChildren: 0.05 } }
-              }}
-            >
-              {MOCK_DATA.map((dest, i) => (
-                <motion.div 
-                  key={i}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
-                  }}
-                  whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                >
-                  <Link href={`/explore/${dest.id}`} className="block h-full">
-                    <Card 
-                      title={dest.title} 
-                      image={dest.img}
-                      description={`A perfect ${dest.category.toLowerCase()} trip designed just for you.`}
-                      meta={
-                        <>
-                          <span className="flex items-center gap-1 text-secondary"><LuCalendarDays size={16}/> {dest.days}</span>
-                          <span className="flex items-center gap-1 text-accent"><PiStarFill size={16}/> {dest.rating}</span>
-                          <span className="font-semibold text-primary">{dest.price}</span>
-                        </>
-                      }
-                    >
-                      <div className="mt-2">
-                        <MatchScore score={dest.rating > 4.8 ? 95 : 82} />
-                      </div>
-                    </Card>
-                  </Link>
-                </motion.div>
-              ))}
-            </motion.div>
+            {isLoading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[380px]"></div>
+                ))}
+              </div>
+            ) : filteredItems.length === 0 ? (
+              <div className="py-12 text-center text-text-muted bg-surface border border-border rounded-2xl">
+                No travel plans found.
+              </div>
+            ) : (
+              <motion.div 
+                className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6"
+                initial="hidden"
+                animate="visible"
+                variants={{
+                  visible: { transition: { staggerChildren: 0.05 } }
+                }}
+              >
+                {filteredItems.map((dest) => (
+                  <motion.div 
+                    key={dest._id}
+                    variants={{
+                      hidden: { opacity: 0, y: 20 },
+                      visible: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+                    }}
+                    whileHover={{ y: -6, transition: { duration: 0.2 } }}
+                  >
+                    <Link href={`/explore/${dest._id}`} className="block h-full">
+                      <Card 
+                        title={dest.title} 
+                        image={(dest.images && dest.images.length > 0) ? dest.images[0] : (dest.imageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80")}
+                        description={dest.shortDescription}
+                        meta={
+                          <>
+                            <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
+                            <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
+                            <span className="font-semibold text-primary whitespace-nowrap">{dest.price}</span>
+                          </>
+                        }
+                      >
+                        <div className="mt-2">
+                          <MatchScore score={95} />
+                        </div>
+                      </Card>
+                    </Link>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
             
-            <div className="mt-12 flex justify-center">
-              <Button variant="secondary">Load More</Button>
-            </div>
+            {!isLoading && filteredItems.length > 0 && (
+              <div className="mt-12 flex justify-center">
+                <Button variant="secondary">Load More</Button>
+              </div>
+            )}
           </div>
           
         </div>

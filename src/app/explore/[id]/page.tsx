@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { 
@@ -10,8 +12,97 @@ import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { MatchScore } from "@/components/ui/MatchScore";
+import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function DetailsPage() {
+  const params = useParams();
+  const id = params?.id as string;
+  const [item, setItem] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isBooking, setIsBooking] = useState(false);
+  const [hasBooked, setHasBooked] = useState(false);
+  const { user } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (id) {
+      const fetchItem = async () => {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/items/${id}`);
+          setItem(res.data);
+        } catch (error) {
+          console.error("Failed to fetch item details", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      
+      const checkBookingStatus = async () => {
+        if (!user) return;
+        try {
+          const res = await axios.get(`http://localhost:5000/api/bookings/check/${id}`, {
+            withCredentials: true
+          });
+          setHasBooked(res.data.hasBooked);
+        } catch (error) {
+          console.error("Failed to check booking status", error);
+        }
+      };
+
+      fetchItem();
+      checkBookingStatus();
+    }
+  }, [id, user]);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto flex flex-col gap-8">
+          <div className="animate-pulse bg-surface h-20 rounded-lg"></div>
+          <div className="animate-pulse bg-surface h-96 rounded-lg"></div>
+          <div className="animate-pulse bg-surface h-48 rounded-lg"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className="flex-1 flex justify-center items-center h-[50vh] text-text-muted">
+        Destination not found.
+      </div>
+    );
+  }
+
+  const primaryImage = (item.images && item.images.length > 0) ? item.images[0] : (item.imageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80");
+  const secondaryImage = (item.images && item.images.length > 1) ? item.images[1] : primaryImage;
+  const tertiaryImage = (item.images && item.images.length > 2) ? item.images[2] : primaryImage;
+
+  const handleBook = async () => {
+    if (!user) {
+      router.push(`/login?next=/explore/${id}`);
+      return;
+    }
+
+    setIsBooking(true);
+    try {
+      await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
+      alert("Booking successful! Enjoy your trip!");
+      setHasBooked(true);
+    } catch (error: any) {
+      if (error.response?.data?.error === "You have already booked this plan") {
+        alert("You have already booked this plan.");
+        setHasBooked(true);
+      } else {
+        alert("Failed to book plan. Please try again.");
+      }
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
   return (
     <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
@@ -24,27 +115,27 @@ export default function DetailsPage() {
             <span className="text-text">Destination Details</span>
           </div>
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h1 className="font-display font-semibold text-4xl md:text-5xl text-primary">Santorini Dream Vacation</h1>
+            <h1 className="font-display font-semibold text-4xl md:text-5xl text-primary">{item.title}</h1>
             <MatchScore score={95} />
           </div>
           <div className="flex flex-wrap items-center gap-4 mt-4 text-sm font-medium">
-            <span className="flex items-center gap-1 text-text-muted"><PiMapPinLine size={18} /> Santorini, Greece</span>
+            <span className="flex items-center gap-1 text-text-muted"><PiMapPinLine size={18} /> {item.title}</span>
             <span className="flex items-center gap-1 text-accent"><PiStarFill size={18} /> 4.9 (120 reviews)</span>
-            <Badge variant="secondary">Relaxation</Badge>
+            <Badge variant="secondary">{item.category || "Uncategorized"}</Badge>
           </div>
         </div>
 
         {/* Image Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[400px] md:h-[500px]">
           <div className="md:col-span-2 h-full rounded-2xl overflow-hidden group">
-            <img src="https://images.unsplash.com/photo-1570077188670-e3a8d69ac5f1?w=1200&q=80" alt="Santorini" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <img src={primaryImage} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
           </div>
           <div className="hidden md:flex flex-col gap-4 h-full">
             <div className="flex-1 rounded-2xl overflow-hidden group">
-              <img src="https://images.unsplash.com/photo-1530841377377-3ff06c0ca713?w=600&q=80" alt="Santorini 2" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <img src={secondaryImage} alt={`${item.title} 2`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             </div>
             <div className="flex-1 rounded-2xl overflow-hidden relative group">
-              <img src="https://images.unsplash.com/photo-1613395877344-13d4a8e0d49e?w=600&q=80" alt="Santorini 3" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+              <img src={tertiaryImage} alt={`${item.title} 3`} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
               <div className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer hover:bg-black/30 transition-colors">
                 <span className="text-white font-medium flex items-center gap-2"><PiCameraDuotone size={24} /> View All Photos</span>
               </div>
@@ -59,39 +150,11 @@ export default function DetailsPage() {
           <div className="flex-1 flex flex-col gap-10">
             <section>
               <h2 className="font-display font-semibold text-2xl text-primary mb-4">About this trip</h2>
-              <p className="text-text leading-relaxed">
-                Experience the magic of Santorini with this carefully curated 5-day itinerary. From the iconic blue-domed churches of Oia to the stunning sunsets over the caldera, every moment is planned for maximum relaxation and cultural immersion. Enjoy local wine tastings, private boat tours, and authentic Greek cuisine.
+              <p className="text-text leading-relaxed whitespace-pre-wrap">
+                {item.fullDescription || item.shortDescription}
               </p>
             </section>
 
-            <section>
-              <h2 className="font-display font-semibold text-2xl text-primary mb-4">Trip Highlights</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {["Sunset catamaran cruise", "Wine tasting tour", "Oia village walking tour", "Akrotiri archaeological site", "Red Beach visit", "Authentic Greek cooking class"].map((item, i) => (
-                  <div key={i} className="flex items-start gap-3">
-                    <PiCheckCircleDuotone size={24} className="text-secondary shrink-0" />
-                    <span className="text-text">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section>
-              <h2 className="font-display font-semibold text-2xl text-primary mb-4">Itinerary Overview</h2>
-              <div className="flex flex-col gap-6 border-l-2 border-border ml-3 pl-6 relative">
-                {[
-                  { day: "Day 1", title: "Arrival & Oia Sunset", desc: "Settle into your hotel and enjoy your first spectacular sunset over the caldera." },
-                  { day: "Day 2", title: "Caldera Boat Tour", desc: "Sail around the volcano, swim in hot springs, and dine on board." },
-                  { day: "Day 3", title: "Wine & Culture", desc: "Visit traditional wineries and ancient Akrotiri ruins." },
-                ].map((day, i) => (
-                  <div key={i} className="relative">
-                    <div className="absolute -left-[35px] top-1 w-4 h-4 rounded-full bg-accent ring-4 ring-neutral-bg" />
-                    <h3 className="font-semibold text-lg text-primary">{day.day}: {day.title}</h3>
-                    <p className="text-text-muted mt-1">{day.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
             <section>
               <h2 className="font-display font-semibold text-2xl text-primary mb-4">Seasonal Price Trend</h2>
               <p className="text-text-muted mb-4">See how average prices fluctuate throughout the year to plan your budget perfectly.</p>
@@ -105,14 +168,14 @@ export default function DetailsPage() {
           <div className="lg:w-80 lg:shrink-0">
             <div className="sticky top-24 bg-surface p-6 rounded-2xl border border-border shadow-xl">
               <div className="flex items-end gap-2 mb-6">
-                <span className="font-display font-semibold text-3xl text-primary">$1,200</span>
+                <span className="font-display font-semibold text-3xl text-primary">{item.price}</span>
                 <span className="text-text-muted pb-1">/ person</span>
               </div>
               
               <div className="flex flex-col gap-4 mb-6">
                 <div className="flex items-center gap-3 text-sm text-text">
                   <LuCalendarDays size={20} className="text-secondary" />
-                  <span>5 Days, 4 Nights</span>
+                  <span>{item.duration}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-text">
                   <PiUsersThreeDuotone size={20} className="text-secondary" />
@@ -124,7 +187,15 @@ export default function DetailsPage() {
                 </div>
               </div>
               
-              <Button variant="cta" className="w-full mb-4">Book this Plan</Button>
+              <Button 
+                variant="cta" 
+                className={`w-full mb-4 ${hasBooked ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500' : ''}`} 
+                onClick={handleBook} 
+                disabled={isBooking || hasBooked}
+                icon={hasBooked ? <PiCheckCircleDuotone size={20} /> : undefined}
+              >
+                {hasBooked ? "Already Booked" : isBooking ? "Booking..." : "Book this Plan"}
+              </Button>
               <Button variant="secondary" className="w-full">Customize with AI</Button>
             </div>
           </div>
