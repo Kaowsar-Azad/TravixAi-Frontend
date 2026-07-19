@@ -35,7 +35,7 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 w-full bg-primary/95 backdrop-blur-md border-b border-primary-hover">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8 h-16 flex items-center justify-between relative">
         
         {/* Brand */}
         <div className="flex items-center gap-4">
@@ -67,6 +67,15 @@ export function Navbar() {
               </Link>
             )
           })}
+          <button
+            onClick={() => setIsChatOpen(!isChatOpen)}
+            className={`relative flex items-center h-full text-sm font-medium transition-colors ${isChatOpen ? 'text-accent' : 'text-neutral-bg hover:text-accent-hover'}`}
+          >
+            AI Assistant
+            {isChatOpen && (
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent rounded-t-[2px]" />
+            )}
+          </button>
         </div>
 
         {/* Right Actions */}
@@ -75,16 +84,7 @@ export function Navbar() {
             <LuSearch size={20} />
           </button>
           
-          <div className="relative flex">
-            <button 
-              className={`flex items-center gap-2 p-2 transition-colors rounded-full ${isChatOpen ? 'bg-accent text-white' : 'text-accent hover:text-accent-hover'}`}
-              aria-label="AI Assistant"
-              onClick={() => setIsChatOpen(!isChatOpen)}
-            >
-              <PiChatCircleDotsDuotone size={24} />
-            </button>
-            <AIChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
-          </div>
+          <AIChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
 
           {!isLoggedIn ? (
             <div className="hidden sm:flex">
@@ -124,6 +124,12 @@ export function Navbar() {
               </Link>
             )
           })}
+          <button
+            onClick={() => { setIsChatOpen(!isChatOpen); setIsMenuOpen(false); }}
+            className={`w-full text-left font-medium text-lg py-2 ${isChatOpen ? 'text-accent' : 'text-neutral-bg'}`}
+          >
+            AI Assistant
+          </button>
           {!isLoggedIn ? (
             <div className="mt-4">
               <Link href="/login" className="w-full block" onClick={() => setIsMenuOpen(false)}>
