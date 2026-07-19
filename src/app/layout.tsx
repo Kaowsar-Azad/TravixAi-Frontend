@@ -3,6 +3,7 @@ import { Fraunces, Inter, Space_Mono, Newsreader } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { AIChatWidget } from "@/components/AIChatWidget";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -46,6 +47,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <AIChatWidget />
       </body>
     </html>
   );
