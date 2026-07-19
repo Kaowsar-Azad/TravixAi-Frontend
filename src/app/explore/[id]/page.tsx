@@ -23,7 +23,7 @@ export default function DetailsPage() {
   const [item, setItem] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
-  const [hasBooked, setHasBooked] = useState(false);
+  const [bookingStatus, setBookingStatus] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -46,7 +46,7 @@ export default function DetailsPage() {
           const res = await axios.get(`http://localhost:5000/api/bookings/check/${id}`, {
             withCredentials: true
           });
-          setHasBooked(res.data.hasBooked);
+          setBookingStatus(res.data.status);
         } catch (error) {
           console.error("Failed to check booking status", error);
         }
@@ -91,11 +91,11 @@ export default function DetailsPage() {
     try {
       await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
       toast.success("Booking successful! Enjoy your trip!");
-      setHasBooked(true);
+      setBookingStatus("Requested");
     } catch (error: any) {
       if (error.response?.data?.error === "You have already booked this plan") {
         toast.warning("You have already booked this plan.");
-        setHasBooked(true);
+        setBookingStatus("Requested"); // Or fetch status again
       } else {
         toast.error("Failed to book plan. Please try again.");
       }
@@ -190,12 +190,24 @@ export default function DetailsPage() {
               
               <Button 
                 variant="cta" 
-                className={`w-full mb-4 ${hasBooked ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500' : ''}`} 
+                className={`w-full mb-4 ${
+                  bookingStatus === 'Confirmed' 
+                    ? 'bg-emerald-500 hover:bg-emerald-600 border-emerald-500 text-white' 
+                    : bookingStatus === 'Requested'
+                      ? 'bg-amber-500 hover:bg-amber-600 border-amber-500 text-white font-medium'
+                      : ''
+                }`} 
                 onClick={handleBook} 
-                disabled={isBooking || hasBooked}
-                icon={hasBooked ? <PiCheckCircleDuotone size={20} /> : undefined}
+                disabled={isBooking || bookingStatus === 'Confirmed' || bookingStatus === 'Requested'}
+                icon={bookingStatus === 'Confirmed' ? <PiCheckCircleDuotone size={20} /> : undefined}
               >
-                {hasBooked ? "Already Booked" : isBooking ? "Booking..." : "Book this Plan"}
+                {bookingStatus === 'Confirmed' 
+                  ? "Already Booked" 
+                  : bookingStatus === 'Requested'
+                    ? "Awaiting Confirmation"
+                    : isBooking 
+                      ? "Booking..." 
+                      : "Book this Plan"}
               </Button>
               <Button variant="secondary" className="w-full">Customize with AI</Button>
             </div>

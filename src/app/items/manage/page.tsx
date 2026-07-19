@@ -99,6 +99,18 @@ export default function ManagePlansPage() {
         withCredentials: true
       });
       setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, status } : b));
+      
+      // Update the plan requests count in real-time
+      setPlans(prev => prev.map(p => {
+        if (p._id === selectedPlanId) {
+          return {
+            ...p,
+            pendingRequests: Math.max(0, p.pendingRequests - 1)
+          };
+        }
+        return p;
+      }));
+
       toast.success(`Booking ${status.toLowerCase()} successfully`);
     } catch (error) {
       console.error("Failed to update status", error);
@@ -209,6 +221,19 @@ export default function ManagePlansPage() {
                       </div>
                       <div className="text-xs text-text-muted/60 mt-2 font-mono">
                         Created: {new Date(plan.createdAt).toLocaleDateString()}
+                      </div>
+                      
+                      <div className="mt-2">
+                        {plan.pendingRequests > 0 ? (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                            {plan.pendingRequests} New {plan.pendingRequests === 1 ? 'Request' : 'Requests'}
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-bg text-text-muted border border-border text-xs font-medium">
+                            <span>{plan.totalBookings || 0} Bookings</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                     
