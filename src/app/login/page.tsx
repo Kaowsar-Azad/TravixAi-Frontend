@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -10,7 +10,7 @@ import { FcGoogle } from "react-icons/fc";
 import { signIn } from "@/lib/auth-client";
 import { toast } from "react-toastify";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextRoute = searchParams?.get("next") || "/";
@@ -134,5 +134,17 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex-1 flex justify-center items-center h-[50vh]">
+        <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full"></div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   );
 }
