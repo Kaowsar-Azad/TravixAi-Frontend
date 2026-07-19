@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { 
   PiMapPinLine, PiStarFill, PiCheckCircleDuotone, 
-  PiUsersThreeDuotone, PiCameraDuotone, PiClockDuotone
+  PiUsersThreeDuotone, PiCameraDuotone, PiClockDuotone,
+  PiXCircleDuotone
 } from "react-icons/pi";
 import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
@@ -188,6 +189,13 @@ export default function DetailsPage() {
                 </div>
               </div>
               
+              {bookingStatus === "Rejected" && (
+                <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2 shadow-sm">
+                  <PiXCircleDuotone size={18} className="text-rose-500 shrink-0 mt-0.5" />
+                  <span>Your previous booking request was rejected by the agent. You can request again if you wish.</span>
+                </div>
+              )}
+
               <Button 
                 variant="cta" 
                 className={`w-full mb-4 ${
