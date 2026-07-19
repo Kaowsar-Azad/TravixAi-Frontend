@@ -93,6 +93,19 @@ export default function ManagePlansPage() {
     }
   };
 
+  const handleUpdateStatus = async (bookingId: string, status: "Confirmed" | "Rejected") => {
+    try {
+      await axios.put(`http://localhost:5000/api/bookings/${bookingId}/status`, { status }, {
+        withCredentials: true
+      });
+      setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, status } : b));
+      toast.success(`Booking ${status.toLowerCase()} successfully`);
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast.error("Failed to update booking status.");
+    }
+  };
+
   if (isLoading || !user) return null;
 
   // Animation variants
@@ -105,7 +118,7 @@ export default function ManagePlansPage() {
   };
   const itemVariant = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+    show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 24 } }
   };
 
   return (
@@ -296,13 +309,42 @@ export default function ManagePlansPage() {
                               <p className="text-sm text-text-muted">{booking.user?.email}</p>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <Badge variant="secondary" className="bg-emerald-50 text-emerald-600 border-emerald-200 mb-1">
-                              {booking.status}
-                            </Badge>
-                            <p className="text-xs text-text-muted">
-                              {new Date(booking.bookingDate).toLocaleDateString()}
-                            </p>
+                          
+                          <div className="flex items-center gap-4">
+                            {booking.status === "Requested" && (
+                              <div className="flex gap-2">
+                                <button 
+                                  onClick={() => handleUpdateStatus(booking._id, "Confirmed")}
+                                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                                >
+                                  Accept
+                                </button>
+                                <button 
+                                  onClick={() => handleUpdateStatus(booking._id, "Rejected")}
+                                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                            
+                            <div className="text-right">
+                              <Badge 
+                                variant="secondary" 
+                                className={
+                                  booking.status === "Confirmed" 
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-200 mb-1" 
+                                    : booking.status === "Rejected"
+                                      ? "bg-rose-50 text-rose-600 border-rose-200 mb-1"
+                                      : "bg-amber-50 text-amber-600 border-amber-200 mb-1"
+                                }
+                              >
+                                {booking.status === "Requested" ? "Awaiting Confirmation" : booking.status}
+                              </Badge>
+                              <p className="text-xs text-text-muted">
+                                {new Date(booking.bookingDate).toLocaleDateString()}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       ))}
