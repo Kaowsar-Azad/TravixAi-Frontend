@@ -7,11 +7,10 @@ import { LuMenu, LuSearch, LuX } from "react-icons/lu";
 import { PiChatCircleDotsDuotone } from "react-icons/pi";
 import { Button } from "./ui/Button";
 import { useAuth } from "@/context/AuthContext";
-import { AIChatWidget } from "./AIChatWidget";
+
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
   const isLoggedIn = !!user;
@@ -21,6 +20,7 @@ export function Navbar() {
     { name: "Explore", path: "/explore" },
     { name: "About", path: "/about" },
     { name: "Contact", path: "/contact" },
+    { name: "AI Assistant", path: "/ai-assistant" },
   ];
 
   const loggedInRoutes = [
@@ -29,6 +29,7 @@ export function Navbar() {
     { name: "Add Plan", path: "/items/add" },
     { name: "Manage Plans", path: "/items/manage" },
     { name: "About", path: "/about" },
+    { name: "AI Assistant", path: "/ai-assistant" },
   ];
 
   const routes = isLoggedIn ? loggedInRoutes : loggedOutRoutes;
@@ -67,15 +68,6 @@ export function Navbar() {
               </Link>
             )
           })}
-          <button
-            onClick={() => setIsChatOpen(!isChatOpen)}
-            className={`relative flex items-center h-full text-sm font-medium transition-colors ${isChatOpen ? 'text-accent' : 'text-neutral-bg hover:text-accent-hover'}`}
-          >
-            AI Assistant
-            {isChatOpen && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent rounded-t-[2px]" />
-            )}
-          </button>
         </div>
 
         {/* Right Actions */}
@@ -84,7 +76,7 @@ export function Navbar() {
             <LuSearch size={20} />
           </button>
           
-          <AIChatWidget isOpen={isChatOpen} setIsOpen={setIsChatOpen} />
+
 
           {!isLoggedIn ? (
             <div className="hidden sm:flex">
@@ -124,12 +116,7 @@ export function Navbar() {
               </Link>
             )
           })}
-          <button
-            onClick={() => { setIsChatOpen(!isChatOpen); setIsMenuOpen(false); }}
-            className={`w-full text-left font-medium text-lg py-2 ${isChatOpen ? 'text-accent' : 'text-neutral-bg'}`}
-          >
-            AI Assistant
-          </button>
+
           {!isLoggedIn ? (
             <div className="mt-4">
               <Link href="/login" className="w-full block" onClick={() => setIsMenuOpen(false)}>
