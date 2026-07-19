@@ -321,7 +321,7 @@ function MessageItem({ message }: { message: Message }) {
 function ActionBtn({ icon, tooltip }: { icon: React.ReactNode, tooltip: string }) {
   return (
     <button title={tooltip} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors">
-      {React.cloneElement(icon as React.ReactElement, { size: 15 })}
+      {React.cloneElement(icon as React.ReactElement<any>, { size: 15 })}
     </button>
   );
 }
