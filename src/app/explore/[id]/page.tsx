@@ -9,6 +9,7 @@ import {
 } from "react-icons/pi";
 import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
+import { TrendChart } from "@/components/charts/TrendChart";
 
 export default function DetailsPage() {
   const params = useParams();
@@ -89,6 +90,13 @@ export default function DetailsPage() {
                     <p className="text-text-muted mt-1">{day.desc}</p>
                   </div>
                 ))}
+              </div>
+            </section>
+            <section>
+              <h2 className="font-display font-semibold text-2xl text-primary mb-4">Seasonal Price Trend</h2>
+              <p className="text-text-muted mb-4">See how average prices fluctuate throughout the year to plan your budget perfectly.</p>
+              <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
+                <TrendChart />
               </div>
             </section>
           </div>

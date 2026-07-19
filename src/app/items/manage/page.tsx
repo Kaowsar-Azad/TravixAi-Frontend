@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { PiTrashDuotone, PiEyeDuotone, PiPlusDuotone } from "react-icons/pi";
+import { BudgetChart } from "@/components/charts/BudgetChart";
 
 const MOCK_PLANS = [
   { id: "1", title: "Santorini Dream Vacation", price: "$1,200", duration: "5 Days", date: "Oct 12, 2026", status: "Active" },
@@ -25,6 +26,18 @@ export default function ManagePlansPage() {
           <Link href="/items/add">
             <Button variant="primary" icon={<PiPlusDuotone size={20} />}>Add New Plan</Button>
           </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-2">
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
+            <h3 className="font-display font-semibold text-xl mb-4">Estimated Expenses</h3>
+            <BudgetChart />
+          </div>
+          <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
+            <h3 className="font-display font-semibold text-xl mb-2">AI Smart Savings</h3>
+            <p className="text-5xl font-display font-semibold text-success mt-4">$450</p>
+            <p className="text-text-muted mt-4 max-w-xs">Saved on average compared to traditional travel agencies by optimizing flights and hotels.</p>
+          </div>
         </div>
 
         <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden overflow-x-auto">
