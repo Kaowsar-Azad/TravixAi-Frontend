@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -17,6 +17,7 @@ import axios from "axios";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import ReactMarkdown from "react-markdown";
 
 export default function DetailsPage() {
   const params = useParams();
@@ -25,8 +26,42 @@ export default function DetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+  const [isCustomizing, setIsCustomizing] = useState(false);
+  const [preferences, setPreferences] = useState("");
+  const [budget, setBudget] = useState("");
+  const [days, setDays] = useState("");
+  const [nights, setNights] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+  const customizeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isCustomizing && customizeRef.current) {
+      setTimeout(() => {
+        customizeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  }, [isCustomizing]);
+
+  useEffect(() => {
+    // Restore customizing state if returning from login
+    const savedPlanId = sessionStorage.getItem('customizingPlanId');
+    if (savedPlanId === id) {
+      setIsCustomizing(true);
+      setBudget(sessionStorage.getItem('customizingBudget') || "");
+      setDays(sessionStorage.getItem('customizingDays') || "");
+      setNights(sessionStorage.getItem('customizingNights') || "");
+      setPreferences(sessionStorage.getItem('customizingPreferences') || "");
+      
+      // Clear after restoring
+      sessionStorage.removeItem('customizingPlanId');
+      sessionStorage.removeItem('customizingBudget');
+      sessionStorage.removeItem('customizingDays');
+      sessionStorage.removeItem('customizingNights');
+      sessionStorage.removeItem('customizingPreferences');
+    }
+  }, [id]);
 
   useEffect(() => {
     if (id) {
@@ -105,6 +140,43 @@ export default function DetailsPage() {
     }
   };
 
+  const handleCustomize = async () => {
+    if (!user) {
+      sessionStorage.setItem('customizingPlanId', id);
+      sessionStorage.setItem('customizingBudget', budget);
+      sessionStorage.setItem('customizingDays', days);
+      sessionStorage.setItem('customizingNights', nights);
+      sessionStorage.setItem('customizingPreferences', preferences);
+      router.push(`/login?next=/explore/${id}`);
+      return;
+    }
+    
+    if (!budget.trim() || !days.trim() || !nights.trim()) {
+      toast.warning("Please fill in the Budget, Days, and Nights to get a proper plan.");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const res = await axios.post("http://localhost:5000/api/ai/customize", {
+        basePlanId: id,
+        budget,
+        days,
+        nights,
+        preferences
+      }, { withCredentials: true });
+      
+      const newPlanId = res.data.newPlanId;
+      toast.success("Custom plan generated successfully!");
+      router.push(`/explore/${newPlanId}`);
+    } catch (error) {
+      console.error("Failed to generate plan", error);
+      toast.error("Failed to generate custom plan. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
       <div className="max-w-5xl mx-auto flex flex-col gap-8">
@@ -152,16 +224,36 @@ export default function DetailsPage() {
           <div className="flex-1 flex flex-col gap-10">
             <section>
               <h2 className="font-display font-semibold text-2xl text-primary mb-4">About this trip</h2>
-              <p className="text-text leading-relaxed whitespace-pre-wrap">
-                {item.fullDescription || item.shortDescription}
-              </p>
+              <div className="text-text leading-relaxed">
+                <ReactMarkdown
+                  components={{
+                    h1: ({node, ...props}) => <h1 className="text-2xl font-bold text-primary mt-6 mb-3" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="text-xl font-semibold text-primary mt-6 mb-3" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="text-lg font-medium text-primary mt-4 mb-2" {...props} />,
+                    ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-4 text-text space-y-2" {...props} />,
+                    ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-4 text-text space-y-2" {...props} />,
+                    li: ({node, ...props}) => <li className="text-text" {...props} />,
+                    p: ({node, ...props}) => <p className="text-text leading-relaxed mb-4" {...props} />,
+                    strong: ({node, ...props}) => <strong className="font-semibold text-gray-900" {...props} />,
+                  }}
+                >
+                  {item.fullDescription || item.shortDescription}
+                </ReactMarkdown>
+              </div>
             </section>
 
             <section>
               <h2 className="font-display font-semibold text-2xl text-primary mb-4">Seasonal Price Trend</h2>
               <p className="text-text-muted mb-4">See how average prices fluctuate throughout the year to plan your budget perfectly.</p>
               <div className="bg-surface p-6 rounded-2xl border border-border shadow-sm">
-                <TrendChart />
+                {(() => {
+                  const priceStr = item.price || "";
+                  const match = priceStr.replace(/,/g, '').match(/(\d+)/);
+                  const numericalPrice = match ? parseInt(match[1]) : 1000;
+                  const isBdt = priceStr.toLowerCase().includes("bdt") || priceStr.toLowerCase().includes("টাকা");
+                  const currencySymbol = isBdt ? "৳" : "$";
+                  return <TrendChart basePrice={numericalPrice} currencySymbol={currencySymbol} />;
+                })()}
               </div>
             </section>
           </div>
@@ -189,7 +281,13 @@ export default function DetailsPage() {
                 </div>
               </div>
               
-              {bookingStatus === "Rejected" && (
+              {user?.id === item.userId ? (
+                <div className="mb-4 p-4 bg-primary/5 border border-primary/10 text-primary text-sm font-medium rounded-xl text-center shadow-sm">
+                  This is your own travel plan.
+                </div>
+              ) : (
+                <>
+                  {bookingStatus === "Rejected" && (
                 <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-start gap-2 shadow-sm">
                   <PiXCircleDuotone size={18} className="text-rose-500 shrink-0 mt-0.5" />
                   <span>Your previous booking request was rejected by the agent. You can request again if you wish.</span>
@@ -224,7 +322,95 @@ export default function DetailsPage() {
                       ? "Booking..." 
                       : "Book this Plan"}
               </Button>
-              <Button variant="secondary" className="w-full">Customize with AI</Button>
+              
+              {(bookingStatus !== 'Confirmed' && bookingStatus !== 'Requested') && (
+                !isCustomizing ? (
+                  <Button 
+                    variant="secondary" 
+                    className="w-full !text-amber-700 !hover:text-amber-900 !border-amber-500/30 !hover:border-amber-500 !bg-amber-50/20 !hover:bg-amber-50/80 transition-all duration-200 shadow-sm" 
+                    onClick={() => setIsCustomizing(true)}
+                    icon={<PiStarFill className="text-amber-500" />}
+                  >
+                    Customize with AI
+                  </Button>
+                ) : (
+                  <div ref={customizeRef} className="mt-4 p-4 bg-amber-50/50 border border-amber-100 rounded-xl">
+                    <p className="text-xs font-medium text-amber-800 mb-3 flex items-center gap-1">
+                      <PiStarFill /> Plan your dream trip
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div>
+                        <label className="text-xs text-text-muted mb-1 block font-medium">Days</label>
+                        <input 
+                          type="number"
+                          className="w-full text-sm p-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                          placeholder="e.g. 3"
+                          value={days}
+                          onChange={(e) => setDays(e.target.value)}
+                          disabled={isGenerating}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-text-muted mb-1 block font-medium">Nights</label>
+                        <input 
+                          type="number"
+                          className="w-full text-sm p-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                          placeholder="e.g. 2"
+                          value={nights}
+                          onChange={(e) => setNights(e.target.value)}
+                          disabled={isGenerating}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mb-3">
+                      <label className="text-xs text-text-muted mb-1 block font-medium">Target Budget (BDT)</label>
+                      <input 
+                        type="number"
+                        className="w-full text-sm p-2 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                        placeholder="e.g. 6000"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
+                        disabled={isGenerating}
+                      />
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="text-xs text-text-muted mb-1 block font-medium">Additional Preferences (Optional)</label>
+                      <textarea
+                        className="w-full text-sm p-2.5 rounded-lg border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white resize-none"
+                        rows={2}
+                        placeholder="E.g., Suggest budget friendly hostels, vegetarian food..."
+                        value={preferences}
+                        onChange={(e) => setPreferences(e.target.value)}
+                        disabled={isGenerating}
+                      />
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="secondary" 
+                        className="flex-1 text-xs py-1.5"
+                        onClick={() => setIsCustomizing(false)}
+                        disabled={isGenerating}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        variant="cta" 
+                        className="flex-1 text-xs py-1.5 bg-gradient-to-r from-amber-500 to-orange-500 border-none text-white hover:from-amber-600 hover:to-orange-600 shadow-sm"
+                        onClick={handleCustomize}
+                        disabled={isGenerating}
+                      >
+                        {isGenerating ? "Generating..." : "Generate"}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              )}
+                </>
+              )}
             </div>
           </div>
 

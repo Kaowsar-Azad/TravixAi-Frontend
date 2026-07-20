@@ -162,7 +162,7 @@ export default function ExplorePage() {
                           <>
                             <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
                             <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
-                            <span className="font-semibold text-primary whitespace-nowrap">{dest.price}</span>
+                            <span className="font-semibold text-primary whitespace-nowrap">Budget: {dest.price}</span>
                           </>
                         }
                       >

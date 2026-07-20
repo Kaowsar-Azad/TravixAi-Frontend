@@ -2,17 +2,17 @@
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const data = [
-  { month: 'Jan', price: 1200 },
-  { month: 'Feb', price: 1100 },
-  { month: 'Mar', price: 950 },
-  { month: 'Apr', price: 1050 },
-  { month: 'May', price: 1400 },
-  { month: 'Jun', price: 1800 },
-  { month: 'Jul', price: 1950 },
-];
+export function TrendChart({ basePrice = 1000, currencySymbol = "$" }: { basePrice?: number; currencySymbol?: string }) {
+  const data = [
+    { month: 'Jan', price: Math.round(basePrice * 1.0) },
+    { month: 'Feb', price: Math.round(basePrice * 0.9) },
+    { month: 'Mar', price: Math.round(basePrice * 0.8) },
+    { month: 'Apr', price: Math.round(basePrice * 0.85) },
+    { month: 'May', price: Math.round(basePrice * 1.15) },
+    { month: 'Jun', price: Math.round(basePrice * 1.4) },
+    { month: 'Jul', price: Math.round(basePrice * 1.5) },
+  ];
 
-export function TrendChart() {
   return (
     <div className="w-full h-[300px]">
       <ResponsiveContainer width="100%" height="100%">
@@ -38,11 +38,11 @@ export function TrendChart() {
             axisLine={false}
             tickLine={false}
             tick={{ fill: '#6B6F76', fontSize: 12 }}
-            tickFormatter={(value) => `$${value}`}
+            tickFormatter={(value) => `${currencySymbol}${value}`}
           />
           <Tooltip 
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: any) => [`$${value}`, 'Avg Price']}
+            formatter={(value: any) => [`${currencySymbol}${value}`, 'Avg Price']}
           />
           <Area 
             type="monotone" 

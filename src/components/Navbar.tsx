@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LuMenu, LuSearch, LuX } from "react-icons/lu";
+import { LuMenu, LuLogOut, LuX } from "react-icons/lu";
 import { Button } from "./ui/Button";
 import { useAuth } from "@/context/AuthContext";
 
@@ -25,6 +25,7 @@ export function Navbar() {
   const loggedInRoutes = [
     { name: "Home", path: "/" },
     { name: "Explore", path: "/explore" },
+    { name: "My Bookings", path: "/my-bookings" },
   ];
 
   if (user?.role === "travel_agent" || user?.role === "admin") {
@@ -85,12 +86,6 @@ export function Navbar() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <button className="hidden lg:flex p-2 text-neutral-bg hover:text-accent transition-colors rounded-full" aria-label="Search">
-            <LuSearch size={20} />
-          </button>
-          
-
-
           {!isLoggedIn ? (
             <div className="hidden sm:flex">
               <Link href="/login">
@@ -98,27 +93,24 @@ export function Navbar() {
               </Link>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-4 relative group">
-              <div className="flex items-center gap-2 cursor-pointer">
+            <div className="hidden sm:flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {user.image ? (
                   <img src={user.image} alt="Profile" className="w-8 h-8 rounded-full border border-border bg-white object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-full border border-border bg-accent flex items-center justify-center text-white font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full border border-neutral-bg/20 bg-accent flex items-center justify-center text-white font-bold text-sm">
                     {user.name ? user.name.charAt(0).toUpperCase() : "U"}
                   </div>
                 )}
                 <span className="text-sm font-medium text-neutral-bg">{user.name}</span>
               </div>
-              {/* Dropdown Profile */}
-              <div className="absolute top-full right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all flex flex-col p-2">
-                {(user?.role === "travel_agent" || user?.role === "admin") && (
-                  <Link href="/items/manage" className="px-4 py-2 text-sm text-text hover:bg-neutral-bg rounded-lg">Manage Trips</Link>
-                )}
-                {user?.role === "admin" && (
-                  <Link href="/admin/dashboard" className="px-4 py-2 text-sm text-text hover:bg-neutral-bg rounded-lg">Admin Dashboard</Link>
-                )}
-                <button onClick={logout} className="px-4 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-lg text-left">Logout</button>
-              </div>
+              <button 
+                onClick={logout} 
+                className="flex items-center gap-1.5 text-xs font-semibold text-rose-400 hover:text-white border border-rose-500/20 hover:border-rose-500 bg-rose-500/10 hover:bg-rose-500 transition-all duration-200 py-1.5 px-3 rounded-lg cursor-pointer shadow-sm hover:shadow-rose-500/20"
+              >
+                <LuLogOut size={14} />
+                Logout
+              </button>
             </div>
           )}
         </div>
@@ -159,7 +151,11 @@ export function Navbar() {
                 )}
                 <span className="font-medium text-neutral-bg">{user.name}</span>
               </div>
-              <button onClick={() => { logout(); setIsMenuOpen(false); }} className="w-full text-left font-medium text-lg py-2 text-destructive px-2">
+              <button 
+                onClick={() => { logout(); setIsMenuOpen(false); }} 
+                className="w-full flex items-center gap-2 font-medium text-lg py-2 text-destructive px-2 hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <LuLogOut size={18} />
                 Logout
               </button>
             </div>

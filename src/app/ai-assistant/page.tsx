@@ -11,9 +11,14 @@ import {
   FiRefreshCw, 
   FiThumbsUp, 
   FiThumbsDown, 
-  FiMessageSquare
+  FiMessageSquare,
+  FiPaperclip,
+  FiX
 } from 'react-icons/fi';
 import { PiSparkleFill } from 'react-icons/pi';
+import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
+import { toast } from 'react-toastify';
 
 // --- Types ---
 type Message = {
@@ -21,6 +26,13 @@ type Message = {
   role: 'user' | 'assistant';
   content: string;
   isStreaming?: boolean;
+};
+
+type ChatSession = {
+  id: string;
+  title: string;
+  updatedAt: number;
+  messages: Message[];
 };
 
 // --- Mock Data ---
@@ -31,22 +43,165 @@ const SUGGESTIONS = [
   { prompt: "Best hidden gem restaurants in Rome", category: "Local Guide" }
 ];
 
-const HISTORY_GROUPS = [
-  { label: "Today", items: ["Bali Itinerary", "Flight cancellation policy"] },
-  { label: "Last 7 Days", items: ["Packing list for hiking", "Paris hotels", "Kyoto travel guide"] },
-  { label: "Older", items: ["Visa for Turkey", "Weekend getaways near me"] },
-];
-
 export default function AiAssistant() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isThinking, setIsThinking] = useState(false);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [savedSessions, setSavedSessions] = useState<ChatSession[]>([]);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const hasMessages = messages.length > 0;
+  const { user } = useAuth();
+  const storageKey = user ? `travix_ai_chats_${user.id || user.email}` : null;
+  const [feedback, setFeedback] = useState<{ [key: string]: 'like' | 'dislike' }>({});
+
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
+    setFeedback(prev => {
+      const current = prev[messageId];
+      if (current === type) {
+        const updated = { ...prev };
+        delete updated[messageId];
+        toast.info("Feedback removed");
+        return updated;
+      } else {
+        toast.success(type === 'like' ? "Thanks for your feedback!" : "Feedback submitted.");
+        return {
+          ...prev,
+          [messageId]: type
+        };
+      }
+    });
+  };
+
+  const handleRegenerate = async (messageId: string) => {
+    const idx = messages.findIndex(m => m.id === messageId);
+    if (idx === -1 || idx === 0) return;
+    
+    const userMsg = messages[idx - 1];
+    if (userMsg.role !== 'user') return;
+
+    const historyBefore = messages.slice(0, idx - 1);
+    
+    setMessages(messages.slice(0, idx));
+    setIsThinking(true);
+
+    try {
+      const chatHistoryInput = historyBefore.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      const res = await axios.post("http://localhost:5000/api/ai/chat", {
+        message: userMsg.content,
+        history: chatHistoryInput
+      });
+
+      if (res.data && res.data.success) {
+        const aiMsgId = Date.now().toString();
+        setMessages(prev => {
+          const userMsgIndex = prev.findIndex(m => m.id === userMsg.id);
+          if (userMsgIndex === -1) return prev;
+          return [
+            ...prev.slice(0, userMsgIndex + 1),
+            { 
+              id: aiMsgId, 
+              role: 'assistant', 
+              content: res.data.response 
+            }
+          ];
+        });
+        toast.success("Message regenerated!");
+      } else {
+        throw new Error("Failed to regenerate");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to regenerate message. Please try again.");
+    } finally {
+      setIsThinking(false);
+    }
+  };
+
+  useEffect(() => {
+    // Load sessions when storageKey changes (user logs in or out)
+    if (storageKey) {
+      const sessions = localStorage.getItem(storageKey);
+      if (sessions) {
+        try {
+          setSavedSessions(JSON.parse(sessions));
+        } catch (e) {
+          setSavedSessions([]);
+        }
+      } else {
+        setSavedSessions([]);
+      }
+    } else {
+      setSavedSessions([]);
+      setMessages([]);
+      setCurrentSessionId(null);
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    // Save session when messages change (only if user is logged in)
+    if (storageKey && messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+      const sessionId = currentSessionId || Date.now().toString();
+      if (!currentSessionId) setCurrentSessionId(sessionId);
+      
+      const firstMsg = messages[0].content;
+      const title = firstMsg.substring(0, 30) + (firstMsg.length > 30 ? '...' : '');
+      
+      const newSession: ChatSession = {
+        id: sessionId,
+        title,
+        updatedAt: Date.now(),
+        messages
+      };
+      
+      setSavedSessions(prev => {
+        let newSessions = [...prev];
+        const sessionIndex = newSessions.findIndex(s => s.id === sessionId);
+        
+        if (sessionIndex >= 0) {
+          newSessions[sessionIndex] = newSession;
+        } else {
+          newSessions.unshift(newSession);
+        }
+        
+        localStorage.setItem(storageKey, JSON.stringify(newSessions));
+        return newSessions;
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, storageKey]);
+
+  const handleNewChat = () => {
+    setMessages([]);
+    setCurrentSessionId(null);
+    setSelectedFile(null);
+  };
+
+  const loadSession = (session: ChatSession) => {
+    setMessages(session.messages);
+    setCurrentSessionId(session.id);
+  };
+
+  const todaySessions = savedSessions.filter(s => Date.now() - s.updatedAt < 86400000);
+  const olderSessions = savedSessions.filter(s => Date.now() - s.updatedAt >= 86400000);
+  const dynamicHistoryGroups = [];
+  if (todaySessions.length > 0) dynamicHistoryGroups.push({ label: 'Today', items: todaySessions });
+  if (olderSessions.length > 0) dynamicHistoryGroups.push({ label: 'Older', items: olderSessions });
 
   // Auto-resize textarea
   const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -59,31 +214,78 @@ export default function AiAssistant() {
 
   // Scroll to bottom
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages, isThinking]);
 
   // Handle Send
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() && !selectedFile) return;
 
-    const newUserMsg: Message = { id: Date.now().toString(), role: 'user', content: inputValue.trim() };
+    const userMsgText = inputValue.trim();
+    let displayContent = userMsgText;
+    if (selectedFile) {
+      displayContent += displayContent ? `\n\n[Attached File: ${selectedFile.name}]` : `[Attached File: ${selectedFile.name}]`;
+    }
+    
+    const newUserMsg: Message = { id: Date.now().toString(), role: 'user', content: displayContent };
     setMessages(prev => [...prev, newUserMsg]);
+    
+    const fileToSend = selectedFile;
     setInputValue("");
+    setSelectedFile(null);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
-    // Mock Thinking & Streaming
     setIsThinking(true);
-    setTimeout(() => {
-      setIsThinking(false);
+    try {
+      // Map previous messages to format expected by backend (role: user/assistant, content: string)
+      const chatHistoryInput = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+
+      let res;
+      if (fileToSend) {
+        const formData = new FormData();
+        formData.append("message", userMsgText);
+        formData.append("history", JSON.stringify(chatHistoryInput));
+        formData.append("file", fileToSend);
+        
+        res = await axios.post("http://localhost:5000/api/ai/chat", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+      } else {
+        res = await axios.post("http://localhost:5000/api/ai/chat", {
+          message: userMsgText,
+          history: chatHistoryInput
+        });
+      }
+
+      if (res.data && res.data.success) {
+        const aiMsgId = (Date.now() + 1).toString();
+        setMessages(prev => [...prev, { 
+          id: aiMsgId, 
+          role: 'assistant', 
+          content: res.data.response 
+        }]);
+      } else {
+        throw new Error("Invalid response format");
+      }
+    } catch (err: any) {
+      console.error(err);
       const aiMsgId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, { id: aiMsgId, role: 'assistant', content: "Here is your detailed itinerary...", isStreaming: true }]);
-      
-      setTimeout(() => {
-        setMessages(prev => prev.map(msg => 
-          msg.id === aiMsgId ? { ...msg, isStreaming: false, content: "Here is your detailed itinerary. \n\n### Day 1\nArrival and checking into the hotel. Enjoy a relaxed evening at the local market." } : msg
-        ));
-      }, 2000);
-    }, 1500);
+      setMessages(prev => [...prev, { 
+        id: aiMsgId, 
+        role: 'assistant', 
+        content: "Sorry, I encountered an error while processing your request. Please try again." 
+      }]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (
@@ -100,7 +302,7 @@ export default function AiAssistant() {
           
           {/* New Chat Button */}
           <button 
-            onClick={() => setMessages([])}
+            onClick={handleNewChat}
             className="flex items-center gap-2 w-full bg-[#E8823C] hover:bg-[#d67332] text-white px-4 py-2.5 rounded-xl font-medium transition-colors shadow-sm mb-4"
           >
             <FiPlus size={18} />
@@ -119,14 +321,19 @@ export default function AiAssistant() {
 
           {/* Chat History Lists */}
           <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
-            {HISTORY_GROUPS.map((group, idx) => (
+            {dynamicHistoryGroups.map((group, idx) => (
               <div key={idx}>
                 <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-1">{group.label}</h4>
                 <div className="space-y-0.5">
-                  {group.items.map((item, i) => (
-                    <button key={i} className="w-full flex items-center gap-2 text-left px-2 py-2 text-sm text-gray-300 hover:bg-[#1E293B] hover:text-white rounded-lg transition-colors truncate">
+                  {group.items.map((session, i) => (
+                    <button 
+                      key={i} 
+                      onClick={() => loadSession(session)}
+                      className={`w-full flex items-center gap-2 text-left px-2 py-2 text-sm rounded-lg transition-colors truncate
+                        ${currentSessionId === session.id ? 'bg-[#1E293B] text-white' : 'text-gray-300 hover:bg-[#1E293B]/60 hover:text-white'}`}
+                    >
                       <FiMessageSquare size={14} className="text-gray-500 shrink-0" />
-                      <span className="truncate">{item}</span>
+                      <span className="truncate">{session.title}</span>
                     </button>
                   ))}
                 </div>
@@ -153,7 +360,7 @@ export default function AiAssistant() {
         </header>
 
         {/* Scrollable Messages / Empty State */}
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <div className="max-w-[760px] mx-auto px-4 sm:px-6 py-8 w-full">
             
             <AnimatePresence mode="wait">
@@ -200,7 +407,14 @@ export default function AiAssistant() {
                   className="flex flex-col space-y-8 pb-4"
                 >
                   {messages.map((msg) => (
-                    <MessageItem key={msg.id} message={msg} />
+                    <MessageItem 
+                      key={msg.id} 
+                      message={msg} 
+                      onCopy={handleCopy}
+                      onRegenerate={handleRegenerate}
+                      onFeedback={handleFeedback}
+                      feedbackStatus={feedback[msg.id]}
+                    />
                   ))}
                   
                   {/* Thinking State */}
@@ -226,7 +440,32 @@ export default function AiAssistant() {
         <div className="w-full shrink-0 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent pt-6 pb-6 px-4">
           <div className="max-w-[760px] mx-auto w-full relative">
             
+            {/* Selected File Preview */}
+            {selectedFile && (
+              <div className="absolute -top-10 left-2 bg-white border border-gray-200 text-xs px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm text-gray-700">
+                <FiPaperclip size={12} className="text-[#E8823C]" />
+                <span className="truncate max-w-[200px] font-medium">{selectedFile.name}</span>
+                <button onClick={() => setSelectedFile(null)} className="text-gray-400 hover:text-rose-500 transition-colors ml-1">
+                  <FiX size={14} />
+                </button>
+              </div>
+            )}
+            
             <div className="relative flex items-end bg-white border border-gray-300 focus-within:border-[#E8823C]/40 focus-within:ring-2 focus-within:ring-[#E8823C]/20 rounded-2xl shadow-sm transition-all duration-200">
+              {/* File Upload Button */}
+              <label className="absolute left-2.5 bottom-2 w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center cursor-pointer transition-colors text-gray-400 hover:text-[#E8823C]">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="image/*,.pdf,.doc,.docx,.txt" 
+                  onChange={(e) => {
+                    if (e.target.files?.[0]) setSelectedFile(e.target.files[0]);
+                    e.target.value = ''; // Reset input to allow selecting same file again
+                  }} 
+                />
+                <FiPaperclip size={18} />
+              </label>
+
               <textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -237,21 +476,21 @@ export default function AiAssistant() {
                     handleSend();
                   }
                 }}
-                placeholder="Ask anything about your next trip..."
-                className="w-full max-h-[200px] py-3.5 pl-4 pr-12 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-gray-800 placeholder:text-gray-400 text-[15px]"
+                placeholder="Ask anything about your next trip, or upload a document/image..."
+                className="w-full max-h-[200px] py-3.5 pl-12 pr-12 bg-transparent border-none focus:outline-none focus:ring-0 resize-none text-gray-800 placeholder:text-gray-400 text-[15px]"
                 rows={1}
               />
               
               {/* Dynamic Send Button */}
               <button
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() && !selectedFile}
                 className={`absolute right-2.5 bottom-2 w-8 h-8 rounded-full transition-all duration-150 flex items-center justify-center
-                  ${inputValue.trim() 
+                  ${(inputValue.trim() || selectedFile)
                     ? 'bg-[#E8823C] text-white hover:bg-[#d67332]' 
                     : 'bg-gray-100 cursor-not-allowed'}`}
               >
-                {inputValue.trim() ? (
+                {(inputValue.trim() || selectedFile) ? (
                   <FiSend size={15} className="-ml-0.5 mt-0.5" /> 
                 ) : (
                   <div className="w-2 h-2 rounded-full bg-gray-400" />
@@ -272,7 +511,15 @@ export default function AiAssistant() {
 }
 
 // --- Message Item Component ---
-function MessageItem({ message }: { message: Message }) {
+type MessageItemProps = {
+  message: Message;
+  onCopy: (content: string) => void;
+  onRegenerate: (id: string) => void;
+  onFeedback: (id: string, type: 'like' | 'dislike') => void;
+  feedbackStatus?: 'like' | 'dislike';
+};
+
+function MessageItem({ message, onCopy, onRegenerate, onFeedback, feedbackStatus }: MessageItemProps) {
   const isAI = message.role === 'assistant';
 
   if (!isAI) {
@@ -307,10 +554,26 @@ function MessageItem({ message }: { message: Message }) {
         {/* Hover Actions */}
         {!message.isStreaming && (
           <div className="flex items-center gap-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <ActionBtn icon={<FiCopy />} tooltip="Copy" />
-            <ActionBtn icon={<FiRefreshCw />} tooltip="Regenerate" />
-            <ActionBtn icon={<FiThumbsUp />} tooltip="Helpful" />
-            <ActionBtn icon={<FiThumbsDown />} tooltip="Not helpful" />
+            <ActionBtn 
+              icon={<FiCopy />} 
+              tooltip="Copy" 
+              onClick={() => onCopy(message.content)} 
+            />
+            <ActionBtn 
+              icon={<FiRefreshCw />} 
+              tooltip="Regenerate" 
+              onClick={() => onRegenerate(message.id)} 
+            />
+            <ActionBtn 
+              icon={<FiThumbsUp className={feedbackStatus === 'like' ? 'text-green-500 fill-green-500/20' : ''} />} 
+              tooltip="Helpful" 
+              onClick={() => onFeedback(message.id, 'like')} 
+            />
+            <ActionBtn 
+              icon={<FiThumbsDown className={feedbackStatus === 'dislike' ? 'text-rose-500 fill-rose-500/20' : ''} />} 
+              tooltip="Not helpful" 
+              onClick={() => onFeedback(message.id, 'dislike')} 
+            />
           </div>
         )}
       </div>
@@ -318,9 +581,13 @@ function MessageItem({ message }: { message: Message }) {
   );
 }
 
-function ActionBtn({ icon, tooltip }: { icon: React.ReactNode, tooltip: string }) {
+function ActionBtn({ icon, tooltip, onClick }: { icon: React.ReactNode, tooltip: string, onClick?: () => void }) {
   return (
-    <button title={tooltip} className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors">
+    <button 
+      title={tooltip} 
+      onClick={onClick}
+      className="p-1.5 text-gray-400 hover:text-gray-800 hover:bg-gray-100 rounded-md transition-colors cursor-pointer"
+    >
       {React.cloneElement(icon as React.ReactElement<any>, { size: 15 })}
     </button>
   );

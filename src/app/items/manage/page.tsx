@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { 
   PiTrashDuotone, PiEyeDuotone, PiPlusDuotone, PiPencilDuotone, 
-  PiCurrencyDollarDuotone, PiCalendarBlankDuotone, PiMapPinLine
+  PiCurrencyDollarDuotone, PiCalendarBlankDuotone, PiMapPinLine, PiArrowLeftBold
 } from "react-icons/pi";
+import ReactMarkdown from "react-markdown";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import axios from "axios";
@@ -29,6 +30,24 @@ export default function ManagePlansPage() {
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [isFetchingBookings, setIsFetchingBookings] = useState(false);
+  
+  const [viewingPlanDetails, setViewingPlanDetails] = useState<any>(null);
+  const [viewingBooking, setViewingBooking] = useState<any>(null);
+  const [isLoadingPlanDetails, setIsLoadingPlanDetails] = useState(false);
+
+  const handleViewPlanDetails = async (booking: any) => {
+    setViewingBooking(booking);
+    setIsLoadingPlanDetails(true);
+    try {
+      const res = await axios.get(`http://localhost:5000/api/items/${booking.planId}`);
+      setViewingPlanDetails(res.data);
+    } catch (e) {
+      toast.error("Failed to load plan details");
+      setViewingBooking(null);
+    } finally {
+      setIsLoadingPlanDetails(false);
+    }
+  };
 
   useEffect(() => {
     if (!isLoading) {
@@ -296,16 +315,65 @@ export default function ManagePlansPage() {
               >
                 <div className="p-6 border-b border-border flex justify-between items-center bg-neutral-bg">
                   <div>
-                    <h2 className="text-xl font-display font-semibold text-primary">Booking Details</h2>
-                    <p className="text-sm text-text-muted mt-1">People who have booked this plan</p>
+                    <h2 className="text-xl font-display font-semibold text-primary">
+                      {viewingPlanDetails ? "Customized Plan Details" : "Booking Details"}
+                    </h2>
+                    <p className="text-sm text-text-muted mt-1">
+                      {viewingPlanDetails ? "Review this plan before accepting the booking." : "People who have booked this plan"}
+                    </p>
                   </div>
-                  <button onClick={() => setIsModalOpen(false)} className="p-2 bg-surface hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
+                  <button onClick={() => {
+                    if (viewingPlanDetails) {
+                      setViewingPlanDetails(null);
+                      setViewingBooking(null);
+                    } else {
+                      setIsModalOpen(false);
+                    }
+                  }} className="p-2 bg-surface hover:bg-red-50 hover:text-red-500 rounded-full transition-colors">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
                 </div>
                 
                 <div className="p-6 overflow-y-auto flex-1">
-                  {isFetchingBookings ? (
+                  {isLoadingPlanDetails ? (
+                    <div className="flex justify-center items-center py-12">
+                      <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full"></div>
+                    </div>
+                  ) : viewingPlanDetails ? (
+                    <div className="flex flex-col gap-6">
+                      <button onClick={() => { setViewingPlanDetails(null); setViewingBooking(null); }} className="flex items-center gap-2 text-sm text-text hover:text-primary font-medium w-fit transition-colors">
+                        <PiArrowLeftBold /> Back to Bookings
+                      </button>
+                      
+                      <div className="bg-neutral-bg p-5 rounded-2xl border border-border">
+                        <h3 className="font-display text-xl font-bold mb-3 text-primary">{viewingPlanDetails.title}</h3>
+                        <div className="flex gap-6 mb-5 text-sm">
+                          <div className="flex items-center gap-2"><span className="font-semibold text-text">Price:</span> <span className="text-accent font-bold">{viewingPlanDetails.price}</span></div>
+                          <div className="flex items-center gap-2"><span className="font-semibold text-text">Duration:</span> <span className="text-secondary font-medium">{viewingPlanDetails.duration}</span></div>
+                        </div>
+                        <div className="prose prose-sm max-w-none text-text">
+                          <ReactMarkdown>{viewingPlanDetails.fullDescription}</ReactMarkdown>
+                        </div>
+                      </div>
+                      
+                      {viewingBooking?.status === "Requested" && (
+                        <div className="flex items-center gap-3 pt-2">
+                          <Button 
+                            onClick={() => { handleUpdateStatus(viewingBooking._id, "Confirmed"); setViewingPlanDetails(null); }} 
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-700 border-none text-white shadow-sm"
+                          >
+                            Accept Booking
+                          </Button>
+                          <Button 
+                            onClick={() => { handleUpdateStatus(viewingBooking._id, "Rejected"); setViewingPlanDetails(null); }} 
+                            className="flex-1 bg-rose-600 hover:bg-rose-700 border-none text-white shadow-sm"
+                          >
+                            Reject Booking
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ) : isFetchingBookings ? (
                     <div className="flex justify-center items-center py-12">
                       <div className="animate-spin w-8 h-8 border-4 border-accent border-t-transparent rounded-full"></div>
                     </div>
@@ -321,22 +389,33 @@ export default function ManagePlansPage() {
                     <div className="flex flex-col gap-4">
                       {bookings.map((booking: any) => (
                         <div key={booking._id} className="flex items-center justify-between p-4 bg-neutral-bg border border-border rounded-2xl hover:border-accent/30 transition-colors">
-                          <div className="flex items-center gap-4">
-                            {booking.user?.image ? (
-                              <img src={booking.user.image} alt={booking.user.name} className="w-12 h-12 rounded-full border border-border object-cover" />
-                            ) : (
-                              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
-                                {booking.user?.name?.charAt(0) || "U"}
+                          <div className="flex flex-col gap-3 flex-1 mr-4">
+                            <div className="flex items-center gap-4">
+                              {booking.user?.image ? (
+                                <img src={booking.user.image} alt={booking.user.name} className="w-12 h-12 rounded-full border border-border object-cover" />
+                              ) : (
+                                <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold text-lg">
+                                  {booking.user?.name?.charAt(0) || "U"}
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="font-medium text-text">{booking.user?.name || "Unknown User"}</h4>
+                                <p className="text-sm text-text-muted">{booking.user?.email}</p>
+                              </div>
+                            </div>
+                            
+                            {booking.planTitle && booking.planTitle.includes('Customized') && (
+                              <div className="bg-amber-50/80 border border-amber-200/60 rounded-lg p-2.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-sm">
+                                <span className="text-xs text-amber-900 font-medium line-clamp-1"><span className="font-bold text-amber-700">Booked:</span> {booking.planTitle}</span>
+                                <button onClick={() => handleViewPlanDetails(booking)} className="text-xs font-bold text-amber-600 hover:text-amber-800 underline flex-shrink-0">
+                                  View Plan
+                                </button>
                               </div>
                             )}
-                            <div>
-                              <h4 className="font-medium text-text">{booking.user?.name || "Unknown User"}</h4>
-                              <p className="text-sm text-text-muted">{booking.user?.email}</p>
-                            </div>
                           </div>
                           
                           <div className="flex items-center gap-4">
-                            {booking.status === "Requested" && (
+                            {booking.status === "Requested" && !(booking.planTitle && booking.planTitle.includes('Customized')) && (
                               <div className="flex gap-2">
                                 <button 
                                   onClick={() => handleUpdateStatus(booking._id, "Confirmed")}

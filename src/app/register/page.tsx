@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PiEnvelopeDuotone, PiLockKeyDuotone, PiUserDuotone, PiImageDuotone, PiUploadSimpleDuotone, PiXCircleDuotone } from "react-icons/pi";
-import { FcGoogle } from "react-icons/fc";
+
 import { signUp } from "@/lib/auth-client";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -125,15 +125,6 @@ export default function RegisterPage() {
           </div>
 
           <div className="flex flex-col gap-4">
-            <Button variant="secondary" className="w-full flex justify-center items-center gap-3 bg-white" icon={<FcGoogle size={22} />}>
-              Sign up with Google
-            </Button>
-            
-            <div className="flex items-center gap-4 my-2">
-              <div className="flex-1 border-t border-border"></div>
-              <span className="text-text-muted text-sm font-medium">OR</span>
-              <div className="flex-1 border-t border-border"></div>
-            </div>
 
             {error && (
               <div className="p-3 rounded-lg bg-red-100 border border-red-200 text-red-600 text-sm">
