@@ -291,7 +291,13 @@ export default function DetailsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-4 mt-4 text-sm font-medium">
             <span className="flex items-center gap-1 text-text-muted"><PiMapPinLine size={18} /> {item.title}</span>
-            <span className="flex items-center gap-1 text-accent"><PiStarFill size={18} /> 4.9 (120 reviews)</span>
+            {item.reviewsCount > 0 ? (
+              <span className="flex items-center gap-1 text-accent">
+                <PiStarFill size={18} className="text-amber-500 fill-amber-500" /> {Number(item.averageRating).toFixed(1)} ({item.reviewsCount} {item.reviewsCount === 1 ? "review" : "reviews"})
+              </span>
+            ) : (
+              <span className="text-text-muted">No reviews yet</span>
+            )}
             <Badge variant="secondary">{item.category || "Uncategorized"}</Badge>
           </div>
         </div>
@@ -661,7 +667,13 @@ export default function DetailsPage() {
                     meta={
                       <>
                         <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
-                        <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
+                        {dest.reviewsCount > 0 ? (
+                          <span className="flex items-center gap-1 text-accent whitespace-nowrap">
+                            <PiStarFill size={16} className="text-amber-500 fill-amber-500" /> {Number(dest.averageRating).toFixed(1)} ({dest.reviewsCount})
+                          </span>
+                        ) : (
+                          <span className="text-text-muted text-xs whitespace-nowrap">No reviews</span>
+                        )}
                         <span className="font-semibold text-primary whitespace-nowrap">Budget: {dest.price}</span>
                       </>
                     }

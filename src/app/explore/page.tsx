@@ -169,7 +169,13 @@ export default function ExplorePage() {
                         meta={
                           <>
                             <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
-                            <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
+                            {dest.reviewsCount > 0 ? (
+                              <span className="flex items-center gap-1 text-accent whitespace-nowrap">
+                                <PiStarFill size={16} className="text-amber-500 fill-amber-500" /> {Number(dest.averageRating).toFixed(1)} ({dest.reviewsCount})
+                              </span>
+                            ) : (
+                              <span className="text-text-muted text-xs whitespace-nowrap">No reviews</span>
+                            )}
                             <span className="font-semibold text-primary whitespace-nowrap">Budget: {dest.price}</span>
                           </>
                         }
