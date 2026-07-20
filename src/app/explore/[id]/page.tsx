@@ -26,6 +26,7 @@ export default function DetailsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
   const [isCustomizing, setIsCustomizing] = useState(false);
   const [preferences, setPreferences] = useState("");
   const [budget, setBudget] = useState("");
@@ -83,6 +84,7 @@ export default function DetailsPage() {
             withCredentials: true
           });
           setBookingStatus(res.data.status);
+          setBookingId(res.data.bookingId);
         } catch (error) {
           console.error("Failed to check booking status", error);
         }
@@ -125,9 +127,10 @@ export default function DetailsPage() {
 
     setIsBooking(true);
     try {
-      await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
+      const res = await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
       toast.success("Booking successful! Enjoy your trip!");
       setBookingStatus("Requested");
+      setBookingId(res.data.bookingId);
     } catch (error: any) {
       if (error.response?.data?.error === "You have already booked this plan") {
         toast.warning("You have already booked this plan.");
@@ -135,6 +138,26 @@ export default function DetailsPage() {
       } else {
         toast.error("Failed to book plan. Please try again.");
       }
+    } finally {
+      setIsBooking(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!bookingId) return;
+    if (!window.confirm("Are you sure you want to cancel this booking request?")) return;
+    
+    setIsBooking(true);
+    try {
+      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {
+        withCredentials: true
+      });
+      toast.success("Booking request cancelled successfully");
+      setBookingStatus(null);
+      setBookingId(null);
+    } catch (error) {
+      console.error("Failed to cancel booking", error);
+      toast.error("Failed to cancel booking. Please try again.");
     } finally {
       setIsBooking(false);
     }
@@ -322,6 +345,17 @@ export default function DetailsPage() {
                       ? "Booking..." 
                       : "Book this Plan"}
               </Button>
+              
+              {bookingStatus === 'Requested' && (
+                <Button 
+                  variant="secondary" 
+                  className="w-full mb-4 !bg-rose-50/50 !text-rose-600 !border-rose-200 hover:!bg-rose-100 hover:!border-rose-300 transition-all shadow-sm"
+                  onClick={handleCancelBooking}
+                  disabled={isBooking}
+                >
+                  Cancel Booking Request
+                </Button>
+              )}
               
               {(bookingStatus !== 'Confirmed' && bookingStatus !== 'Requested') && (
                 !isCustomizing ? (

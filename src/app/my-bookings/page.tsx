@@ -11,6 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { motion } from "framer-motion";
+import { toast } from "react-toastify";
 
 export default function MyBookingsPage() {
   const { user, isLoading } = useAuth();
@@ -44,6 +45,21 @@ export default function MyBookingsPage() {
       fetchMyBookings();
     }
   }, [user]);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this booking request?")) return;
+    
+    try {
+      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {
+        withCredentials: true
+      });
+      setBookings(prev => prev.filter(b => b._id !== bookingId));
+      toast.success("Booking request cancelled successfully");
+    } catch (error) {
+      console.error("Failed to cancel booking", error);
+      toast.error("Failed to cancel booking. Please try again.");
+    }
+  };
 
   if (isLoading || !user) return null;
 
@@ -155,9 +171,18 @@ export default function MyBookingsPage() {
                   </div>
                   
                   <div className="mt-5 pt-1 flex gap-2">
-                    <Link href={`/explore/${booking.planId}`} className="w-full">
+                    <Link href={`/explore/${booking.planId}`} className={booking.status === "Requested" ? "w-1/2" : "w-full"}>
                       <Button variant="secondary" className="w-full text-sm py-2" icon={<PiEyeDuotone size={16} />}>View Details</Button>
                     </Link>
+                    {booking.status === "Requested" && (
+                      <Button 
+                        variant="secondary" 
+                        className="w-1/2 text-sm py-2 !bg-rose-50/50 !text-rose-600 !border-rose-200 hover:!bg-rose-100 hover:!border-rose-300"
+                        onClick={() => handleCancelBooking(booking._id)}
+                      >
+                        Cancel
+                      </Button>
+                    )}
                   </div>
                 </div>
               </motion.div>
