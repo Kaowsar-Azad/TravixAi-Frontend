@@ -1,5 +1,5 @@
-import API_BASE_URL from "@/lib/apiUrl";
 "use client";
+import API_BASE_URL from "@/lib/apiUrl";
 
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";

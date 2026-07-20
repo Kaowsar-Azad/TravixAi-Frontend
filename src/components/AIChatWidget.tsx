@@ -1,5 +1,5 @@
-import API_BASE_URL from "@/lib/apiUrl";
 "use client";
+import API_BASE_URL from "@/lib/apiUrl";
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
