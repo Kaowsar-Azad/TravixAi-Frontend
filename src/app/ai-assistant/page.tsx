@@ -139,7 +139,7 @@ export default function AiAssistant() {
     if (user) {
       const fetchChats = async () => {
         try {
-          const res = await axios.get(`${API_BASE_URL}/api/ai/chats`, { withCredentials: true });
+          const res = await axios.get(`${API_BASE_URL}/api/ai/chats?userId=${user.id || user.email}`);
           if (res.data && res.data.success) {
             // Map MongoDB _id to id if necessary, or just use sessionId
             const mappedSessions = res.data.chats.map((c: any) => ({
@@ -193,10 +193,11 @@ export default function AiAssistant() {
 
       // Save to backend API
       axios.post(`${API_BASE_URL}/api/ai/chats`, {
+        userId: user.id || user.email,
         sessionId,
         title,
         messages
-      }, { withCredentials: true }).catch(err => {
+      }).catch(err => {
         console.error("Failed to save chat to backend:", err);
       });
     }
