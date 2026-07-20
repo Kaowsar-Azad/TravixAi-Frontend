@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useState, useRef } from "react";
@@ -53,7 +54,7 @@ export default function RegisterPage() {
         const formData = new FormData();
         formData.append("image", avatarFile);
 
-        const uploadRes = await axios.post("http://localhost:5000/api/upload", formData, {
+        const uploadRes = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
           headers: {
             "Content-Type": "multipart/form-data"
           }

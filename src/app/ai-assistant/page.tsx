@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -102,7 +103,7 @@ export default function AiAssistant() {
         content: msg.content
       }));
 
-      const res = await axios.post("http://localhost:5000/api/ai/chat", {
+      const res = await axios.post(`${API_BASE_URL}/api/ai/chat`, {
         message: userMsg.content,
         history: chatHistoryInput
       });
@@ -255,11 +256,11 @@ export default function AiAssistant() {
         formData.append("history", JSON.stringify(chatHistoryInput));
         formData.append("file", fileToSend);
         
-        res = await axios.post("http://localhost:5000/api/ai/chat", formData, {
+        res = await axios.post(`${API_BASE_URL}/api/ai/chat`, formData, {
           headers: { "Content-Type": "multipart/form-data" }
         });
       } else {
-        res = await axios.post("http://localhost:5000/api/ai/chat", {
+        res = await axios.post(`${API_BASE_URL}/api/ai/chat`, {
           message: userMsgText,
           history: chatHistoryInput
         });

@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -28,7 +29,7 @@ export default function AdminDashboard() {
     if (user?.role === "admin") {
       const fetchStats = async () => {
         try {
-          const res = await axios.get("http://localhost:5000/api/admin/stats", {
+          const res = await axios.get(`${API_BASE_URL}/api/admin/stats`, {
             withCredentials: true
           });
           setStats(res.data);

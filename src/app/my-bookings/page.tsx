@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -32,7 +33,7 @@ export default function MyBookingsPage() {
     if (user) {
       const fetchMyBookings = async () => {
         try {
-          const res = await axios.get("http://localhost:5000/api/bookings/my-bookings", {
+          const res = await axios.get(`${API_BASE_URL}/api/bookings/my-bookings`, {
             withCredentials: true
           });
           setBookings(res.data);
@@ -50,7 +51,7 @@ export default function MyBookingsPage() {
     if (!window.confirm("Are you sure you want to cancel this booking request?")) return;
     
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {
+      await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}/cancel`, {
         withCredentials: true
       });
       setBookings(prev => prev.filter(b => b._id !== bookingId));

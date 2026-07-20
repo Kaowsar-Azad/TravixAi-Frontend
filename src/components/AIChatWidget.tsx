@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -55,7 +56,7 @@ export function AIChatWidget() {
           content: msg.content
         }));
 
-      const res = await axios.post("http://localhost:5000/api/ai/chat", {
+      const res = await axios.post(`${API_BASE_URL}/api/ai/chat`, {
         message: userMsgText,
         history: chatHistoryInput
       });

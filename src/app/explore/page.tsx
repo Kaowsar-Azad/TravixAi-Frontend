@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -33,7 +34,7 @@ export default function ExplorePage() {
     queryKey: ["explore-items", page, limit, debouncedSearch],
     queryFn: async () => {
       const res = await axios.get(
-        `http://localhost:5000/api/items?page=${page}&limit=${limit}&search=${debouncedSearch}`
+        `${API_BASE_URL}/api/items?page=${page}&limit=${limit}&search=${debouncedSearch}`
       );
       return res.data;
     },

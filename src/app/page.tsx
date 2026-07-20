@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -22,7 +23,7 @@ export default function Home() {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/api/items");
+        const res = await axios.get(`${API_BASE_URL}/api/items`);
         // Get the latest 4 items for trending
         setTrendingItems(res.data.slice(0, 4));
       } catch (err) {

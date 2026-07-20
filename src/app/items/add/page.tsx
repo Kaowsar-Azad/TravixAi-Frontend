@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { Button } from "@/components/ui/Button";
@@ -84,7 +85,7 @@ export default function AddPlanPage() {
           const formData = new FormData();
           formData.append("image", file);
 
-          const uploadRes = await axios.post("http://localhost:5000/api/upload", formData, {
+          const uploadRes = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
             withCredentials: true,
             headers: {
               "Content-Type": "multipart/form-data"
@@ -103,7 +104,7 @@ export default function AddPlanPage() {
       }
 
       // 2. Submit the Travel Plan to our backend
-      const planRes = await axios.post("http://localhost:5000/api/items", {
+      const planRes = await axios.post(`${API_BASE_URL}/api/items`, {
         title,
         shortDescription,
         fullDescription,

@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -39,7 +40,7 @@ export default function ManagePlansPage() {
     setViewingBooking(booking);
     setIsLoadingPlanDetails(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/items/${booking.planId}`);
+      const res = await axios.get(`${API_BASE_URL}/api/items/${booking.planId}`);
       setViewingPlanDetails(res.data);
     } catch (e) {
       toast.error("Failed to load plan details");
@@ -63,7 +64,7 @@ export default function ManagePlansPage() {
     if (user) {
       const fetchMyPlans = async () => {
         try {
-          const res = await axios.get("http://localhost:5000/api/items/my-plans", {
+          const res = await axios.get(`${API_BASE_URL}/api/items/my-plans`, {
             withCredentials: true
           });
           setPlans(res.data);
@@ -82,7 +83,7 @@ export default function ManagePlansPage() {
     
     setDeletingId(id);
     try {
-      await axios.delete(`http://localhost:5000/api/items/${id}`, {
+      await axios.delete(`${API_BASE_URL}/api/items/${id}`, {
         withCredentials: true
       });
       setPlans(prev => prev.filter(p => p._id !== id));
@@ -100,7 +101,7 @@ export default function ManagePlansPage() {
     setIsModalOpen(true);
     setIsFetchingBookings(true);
     try {
-      const res = await axios.get(`http://localhost:5000/api/bookings/plan/${planId}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/bookings/plan/${planId}`, {
         withCredentials: true
       });
       setBookings(res.data);
@@ -114,7 +115,7 @@ export default function ManagePlansPage() {
 
   const handleUpdateStatus = async (bookingId: string, status: "Confirmed" | "Rejected") => {
     try {
-      await axios.put(`http://localhost:5000/api/bookings/${bookingId}/status`, { status }, {
+      await axios.put(`${API_BASE_URL}/api/bookings/${bookingId}/status`, { status }, {
         withCredentials: true
       });
       setBookings(prev => prev.map(b => b._id === bookingId ? { ...b, status } : b));

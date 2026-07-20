@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { useEffect, useState, useRef } from "react";
@@ -76,7 +77,7 @@ export default function DetailsPage() {
     if (id) {
       const fetchItem = async () => {
         try {
-          const res = await axios.get(`http://localhost:5000/api/items/${id}`);
+          const res = await axios.get(`${API_BASE_URL}/api/items/${id}`);
           setItem(res.data);
         } catch (error) {
           console.error("Failed to fetch item details", error);
@@ -87,7 +88,7 @@ export default function DetailsPage() {
 
       const fetchRelated = async () => {
         try {
-          const res = await axios.get(`http://localhost:5000/api/items/${id}/related`);
+          const res = await axios.get(`${API_BASE_URL}/api/items/${id}/related`);
           setRelatedItems(res.data);
         } catch (error) {
           console.error("Failed to fetch related items", error);
@@ -98,7 +99,7 @@ export default function DetailsPage() {
 
       const fetchReviews = async () => {
         try {
-          const res = await axios.get(`http://localhost:5000/api/items/${id}/reviews`);
+          const res = await axios.get(`${API_BASE_URL}/api/items/${id}/reviews`);
           setReviews(res.data);
         } catch (error) {
           console.error("Failed to fetch reviews", error);
@@ -110,7 +111,7 @@ export default function DetailsPage() {
       const checkBookingStatus = async () => {
         if (!user) return;
         try {
-          const res = await axios.get(`http://localhost:5000/api/bookings/check/${id}`, {
+          const res = await axios.get(`${API_BASE_URL}/api/bookings/check/${id}`, {
             withCredentials: true
           });
           setBookingStatus(res.data.status);
@@ -133,7 +134,7 @@ export default function DetailsPage() {
     setIsSubmittingReview(true);
 
     try {
-      const res = await axios.post(`http://localhost:5000/api/items/${id}/reviews`, {
+      const res = await axios.post(`${API_BASE_URL}/api/items/${id}/reviews`, {
         rating: newRating,
         comment: newComment
       }, {
@@ -145,7 +146,7 @@ export default function DetailsPage() {
         setNewComment("");
         setNewRating(5);
         // Refresh reviews list
-        const reviewsRes = await axios.get(`http://localhost:5000/api/items/${id}/reviews`);
+        const reviewsRes = await axios.get(`${API_BASE_URL}/api/items/${id}/reviews`);
         setReviews(reviewsRes.data);
       }
     } catch (error: any) {
@@ -200,7 +201,7 @@ export default function DetailsPage() {
 
     setIsBooking(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/bookings", { planId: id }, { withCredentials: true });
+      const res = await axios.post(`${API_BASE_URL}/api/bookings`, { planId: id }, { withCredentials: true });
       toast.success("Booking successful! Enjoy your trip!");
       setBookingStatus("Requested");
       setBookingId(res.data.bookingId);
@@ -222,7 +223,7 @@ export default function DetailsPage() {
     
     setIsBooking(true);
     try {
-      await axios.delete(`http://localhost:5000/api/bookings/${bookingId}/cancel`, {
+      await axios.delete(`${API_BASE_URL}/api/bookings/${bookingId}/cancel`, {
         withCredentials: true
       });
       toast.success("Booking request cancelled successfully");
@@ -254,7 +255,7 @@ export default function DetailsPage() {
 
     setIsGenerating(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/ai/customize", {
+      const res = await axios.post(`${API_BASE_URL}/api/ai/customize`, {
         basePlanId: id,
         budget,
         days,

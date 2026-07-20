@@ -1,3 +1,4 @@
+import API_BASE_URL from "@/lib/apiUrl";
 "use client";
 
 import { Button } from "@/components/ui/Button";
@@ -50,7 +51,7 @@ export default function EditPlanPage() {
     if (id && user) {
       const fetchItem = async () => {
         try {
-          const res = await axios.get(`http://localhost:5000/api/items/${id}`);
+          const res = await axios.get(`${API_BASE_URL}/api/items/${id}`);
           const item = res.data;
           
           if (item.userId !== user.id) {
@@ -123,7 +124,7 @@ export default function EditPlanPage() {
           const formData = new FormData();
           formData.append("image", file);
 
-          const uploadRes = await axios.post("http://localhost:5000/api/upload", formData, {
+          const uploadRes = await axios.post(`${API_BASE_URL}/api/upload`, formData, {
             withCredentials: true,
             headers: { "Content-Type": "multipart/form-data" }
           });
@@ -136,7 +137,7 @@ export default function EditPlanPage() {
         finalImageUrls = [...finalImageUrls, ...uploadedUrls];
       }
 
-      const planRes = await axios.put(`http://localhost:5000/api/items/${id}`, {
+      const planRes = await axios.put(`${API_BASE_URL}/api/items/${id}`, {
         title,
         shortDescription,
         fullDescription,
