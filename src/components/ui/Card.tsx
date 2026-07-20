@@ -32,6 +32,12 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           
           {children && <div className="mb-4">{children}</div>}
           
+          {/* View Details Action */}
+          <div className="mt-4 mb-4 flex items-center justify-between text-xs font-semibold text-accent group-hover:text-accent-hover transition-colors font-display">
+            <span>View Details</span>
+            <span className="transform translate-x-0 group-hover:translate-x-1 transition-transform">→</span>
+          </div>
+          
           {meta && (
             <div className="mt-auto pt-4 border-t border-dashed border-border flex items-center justify-between gap-2 text-sm font-mono text-text-muted flex-wrap">
               {meta}

@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { PiEnvelopeDuotone, PiLockKeyDuotone, PiUserDuotone, PiImageDuotone, PiUploadSimpleDuotone, PiXCircleDuotone } from "react-icons/pi";
 
-import { signUp } from "@/lib/auth-client";
+import { signUp, signIn } from "@/lib/auth-client";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { FaGoogle } from "react-icons/fa6";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -96,6 +97,19 @@ export default function RegisterPage() {
       toast.error(msg);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignUp = async () => {
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      await signIn.social({
+        provider: "google",
+        callbackURL: `${origin}/`,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to sign up with Google.");
     }
   };
 
@@ -235,6 +249,24 @@ export default function RegisterPage() {
                 {isLoading ? "Creating Account..." : "Create Account"}
               </Button>
             </form>
+
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-surface px-2 text-text-muted">Or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="secondary" 
+              type="button" 
+              className="w-full flex items-center justify-center gap-2 border border-border"
+              onClick={handleGoogleSignUp}
+            >
+              <FaGoogle className="text-red-500" size={18} /> Continue with Google
+            </Button>
           </div>
 
           <p className="text-center text-sm text-text-muted mt-4">

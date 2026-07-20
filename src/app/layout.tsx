@@ -4,6 +4,7 @@ import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Providers } from "@/components/Providers";
+import { AIChatWidget } from "@/components/AIChatWidget";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -48,6 +49,7 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <AIChatWidget />
         </Providers>
       </body>
     </html>

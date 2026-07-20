@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LuMenu, LuLogOut, LuX } from "react-icons/lu";
@@ -10,9 +10,20 @@ import { useAuth } from "@/context/AuthContext";
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const isLoggedIn = !!user;
+  const [imageError, setImageError] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [user]);
+
+  const isLoggedIn = mounted && !!user;
 
   const loggedOutRoutes = [
     { name: "Home", path: "/" },
@@ -28,23 +39,25 @@ export function Navbar() {
     { name: "My Bookings", path: "/my-bookings" },
   ];
 
-  if (user?.role === "travel_agent" || user?.role === "admin") {
+  if (isLoggedIn && (user?.role === "travel_agent" || user?.role === "admin")) {
     loggedInRoutes.push(
       { name: "Add Plan", path: "/items/add" },
       { name: "Manage Plans", path: "/items/manage" }
     );
   }
 
-  if (user?.role === "admin") {
+  if (isLoggedIn) {
     loggedInRoutes.push(
-      { name: "Dashboard", path: "/admin/dashboard" }
+      { name: "About", path: "/about" },
+      { name: "AI Assistant", path: "/ai-assistant" }
     );
   }
 
-  loggedInRoutes.push(
-    { name: "About", path: "/about" },
-    { name: "AI Assistant", path: "/ai-assistant" }
-  );
+  if (isLoggedIn && user?.role === "admin") {
+    loggedInRoutes.push(
+      { name: "Admin Dashboard", path: "/admin/dashboard" }
+    );
+  }
 
   const routes = isLoggedIn ? loggedInRoutes : loggedOutRoutes;
 
@@ -95,8 +108,13 @@ export function Navbar() {
           ) : (
             <div className="hidden sm:flex items-center gap-4">
               <div className="flex items-center gap-2">
-                {user.image ? (
-                  <img src={user.image} alt="Profile" className="w-8 h-8 rounded-full border border-border bg-white object-cover" />
+                {user.image && !imageError ? (
+                  <img 
+                    src={user.image} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full border border-border bg-white object-cover" 
+                    onError={() => setImageError(true)}
+                  />
                 ) : (
                   <div className="w-8 h-8 rounded-full border border-neutral-bg/20 bg-accent flex items-center justify-center text-white font-bold text-sm">
                     {user.name ? user.name.charAt(0).toUpperCase() : "U"}
@@ -142,8 +160,13 @@ export function Navbar() {
           ) : (
             <div className="mt-4 border-t border-primary-hover pt-4 flex flex-col gap-4">
               <div className="flex items-center gap-3 px-2">
-                {user.image ? (
-                  <img src={user.image} alt="Profile" className="w-10 h-10 rounded-full border border-border bg-white object-cover" />
+                {user.image && !imageError ? (
+                  <img 
+                    src={user.image} 
+                    alt="Profile" 
+                    className="w-10 h-10 rounded-full border border-border bg-white object-cover" 
+                    onError={() => setImageError(true)}
+                  />
                 ) : (
                   <div className="w-10 h-10 rounded-full border border-border bg-accent flex items-center justify-center text-white font-bold text-lg">
                     {user.name ? user.name.charAt(0).toUpperCase() : "U"}

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
+import { Card } from "@/components/ui/Card";
 import { 
   PiMapPinLine, PiStarFill, PiCheckCircleDuotone, 
   PiUsersThreeDuotone, PiCameraDuotone, PiClockDuotone,
@@ -23,7 +24,14 @@ export default function DetailsPage() {
   const params = useParams();
   const id = params?.id as string;
   const [item, setItem] = useState<any>(null);
+  const [relatedItems, setRelatedItems] = useState<any[]>([]);
+  const [isRelatedLoading, setIsRelatedLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(true);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [bookingStatus, setBookingStatus] = useState<string | null>(null);
   const [bookingId, setBookingId] = useState<string | null>(null);
@@ -76,6 +84,28 @@ export default function DetailsPage() {
           setIsLoading(false);
         }
       };
+
+      const fetchRelated = async () => {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/items/${id}/related`);
+          setRelatedItems(res.data);
+        } catch (error) {
+          console.error("Failed to fetch related items", error);
+        } finally {
+          setIsRelatedLoading(false);
+        }
+      };
+
+      const fetchReviews = async () => {
+        try {
+          const res = await axios.get(`http://localhost:5000/api/items/${id}/reviews`);
+          setReviews(res.data);
+        } catch (error) {
+          console.error("Failed to fetch reviews", error);
+        } finally {
+          setIsReviewsLoading(false);
+        }
+      };
       
       const checkBookingStatus = async () => {
         if (!user) return;
@@ -91,9 +121,52 @@ export default function DetailsPage() {
       };
 
       fetchItem();
+      fetchRelated();
+      fetchReviews();
       checkBookingStatus();
     }
   }, [id, user]);
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    setIsSubmittingReview(true);
+
+    try {
+      const res = await axios.post(`http://localhost:5000/api/items/${id}/reviews`, {
+        rating: newRating,
+        comment: newComment
+      }, {
+        withCredentials: true
+      });
+
+      if (res.status === 201) {
+        toast.success("Review submitted successfully!");
+        setNewComment("");
+        setNewRating(5);
+        // Refresh reviews list
+        const reviewsRes = await axios.get(`http://localhost:5000/api/items/${id}/reviews`);
+        setReviews(reviewsRes.data);
+      }
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.error || "Failed to submit review");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
+  const calculateAverageRating = () => {
+    if (reviews.length === 0) return "0.0";
+    const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+    return (total / reviews.length).toFixed(1);
+  };
+
+  const getRatingPercentage = (star: number) => {
+    if (reviews.length === 0) return "0%";
+    const count = reviews.filter(r => r.rating === star).length;
+    return `${(count / reviews.length) * 100}%`;
+  };
 
   if (isLoading) {
     return (
@@ -279,6 +352,123 @@ export default function DetailsPage() {
                 })()}
               </div>
             </section>
+
+            <section>
+              <h2 className="font-display font-semibold text-2xl text-primary mb-4">Reviews & Ratings</h2>
+              <div className="flex flex-col gap-6">
+                <div className="flex items-center gap-4 border-b border-border pb-6">
+                  <div className="flex flex-col items-center justify-center p-4 bg-amber-50 rounded-2xl border border-amber-100 min-w-[120px]">
+                    <span className="text-4xl font-display font-bold text-amber-600">{calculateAverageRating()}</span>
+                    <div className="flex text-amber-500 mt-1 gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <PiStarFill 
+                          key={i} 
+                          size={16} 
+                          className={i < Math.round(parseFloat(calculateAverageRating())) ? "text-amber-500" : "text-gray-300"} 
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-text-muted mt-1">{reviews.length} {reviews.length === 1 ? 'review' : 'reviews'}</span>
+                  </div>
+                  <div className="flex-1 flex flex-col gap-2">
+                    {[5, 4, 3, 2, 1].map((star) => (
+                      <div key={star} className="flex items-center gap-2 text-sm">
+                        <span className="text-text-muted w-3">{star}</span>
+                        <PiStarFill className="text-amber-500" size={14} />
+                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-amber-500 rounded-full" 
+                            style={{ width: getRatingPercentage(star) }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {isReviewsLoading ? (
+                  <p className="text-text-muted text-sm italic">Loading reviews...</p>
+                ) : reviews.length === 0 ? (
+                  <p className="text-text-muted text-sm italic">No reviews yet for this travel plan.</p>
+                ) : (
+                  <div className="flex flex-col gap-6 mt-2">
+                    {reviews.map((rev: any) => (
+                      <div key={rev._id} className="flex gap-4 border-b border-border/30 pb-4">
+                        {rev.userImage ? (
+                          <img src={rev.userImage} alt={rev.userName} className="w-10 h-10 rounded-full border border-border object-cover shrink-0" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
+                            {rev.userName.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-semibold text-text">{rev.userName}</span>
+                            <span className="text-xs text-text-muted">{new Date(rev.createdAt).toLocaleDateString()}</span>
+                          </div>
+                          <div className="flex text-amber-500 gap-0.5 mb-2">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <PiStarFill 
+                                key={i} 
+                                size={14} 
+                                className={i < rev.rating ? "text-amber-500" : "text-gray-300"} 
+                              />
+                            ))}
+                          </div>
+                          <p className="text-sm text-text leading-relaxed">{rev.comment}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Submit Review Form */}
+                {user && bookingStatus === "Confirmed" && !reviews.some(r => r.userId === user.id) && (
+                  <div className="mt-4 p-6 bg-amber-50/20 border border-amber-500/10 rounded-2xl">
+                    <h3 className="font-display font-semibold text-lg text-primary mb-4">Share Your Experience</h3>
+                    <form onSubmit={handleSubmitReview} className="flex flex-col gap-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-medium text-text">Your Rating:</span>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              key={star}
+                              type="button"
+                              onClick={() => setNewRating(star)}
+                              className="text-amber-500 hover:scale-110 transition-transform focus:outline-none"
+                            >
+                              <PiStarFill size={22} className={newRating >= star ? "text-amber-500" : "text-gray-300"} />
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-sm font-medium text-text">Comment:</label>
+                        <textarea
+                          rows={3}
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Write your review here..."
+                          className="w-full text-sm p-3.5 rounded-xl border border-border bg-white focus:outline-none focus:ring-2 focus:ring-accent resize-none"
+                          disabled={isSubmittingReview}
+                          required
+                        />
+                      </div>
+                      
+                      <Button
+                        variant="primary"
+                        type="submit"
+                        disabled={isSubmittingReview || !newComment.trim()}
+                        className="w-fit self-end text-xs py-2 px-4"
+                      >
+                        {isSubmittingReview ? "Submitting..." : "Submit Review"}
+                      </Button>
+                    </form>
+                  </div>
+                )}
+              </div>
+            </section>
           </div>
 
           {/* Sticky Booking Card */}
@@ -448,6 +638,39 @@ export default function DetailsPage() {
             </div>
           </div>
 
+        </div>
+
+        {/* Related Items Section */}
+        <div className="mt-4 pt-12 border-t border-border">
+          <h2 className="font-display font-semibold text-2xl text-primary mb-6">Similar Travel Plans</h2>
+          {isRelatedLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[380px]"></div>
+              ))}
+            </div>
+          ) : relatedItems.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedItems.map((dest: any) => (
+                <Link key={dest._id} href={`/explore/${dest._id}`} className="block h-full group hover:-translate-y-1.5 transition-transform duration-300">
+                  <Card 
+                    title={dest.title} 
+                    image={(dest.images && dest.images.length > 0) ? dest.images[0] : (dest.imageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=600&q=80")}
+                    description={dest.shortDescription}
+                    meta={
+                      <>
+                        <span className="flex items-center gap-1 text-secondary whitespace-nowrap"><LuCalendarDays size={16}/> {dest.duration}</span>
+                        <span className="flex items-center gap-1 text-accent whitespace-nowrap"><PiStarFill size={16}/> 4.9</span>
+                        <span className="font-semibold text-primary whitespace-nowrap">Budget: {dest.price}</span>
+                      </>
+                    }
+                  />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-text-muted">No similar plans found.</p>
+          )}
         </div>
       </div>
     </div>

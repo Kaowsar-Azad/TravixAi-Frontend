@@ -9,6 +9,7 @@ import { PiEnvelopeDuotone, PiLockKeyDuotone, PiSparkleDuotone } from "react-ico
 
 import { signIn } from "@/lib/auth-client";
 import { toast } from "react-toastify";
+import { FaGoogle } from "react-icons/fa6";
 
 function LoginForm() {
   const router = useRouter();
@@ -48,6 +49,53 @@ function LoginForm() {
       setError(msg);
       toast.error(msg);
     } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+      await signIn.social({
+        provider: "google",
+        callbackURL: `${origin}${nextRoute}`,
+      });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to log in with Google.");
+    }
+  };
+
+  const handleDemoLogin = async (role: "traveler" | "agent") => {
+    const emailToUse = role === "traveler" ? "traveler@travix.ai" : "agent@travix.ai";
+    setEmail(emailToUse);
+    setPassword("password123");
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await signIn.email({
+        email: emailToUse,
+        password: "password123",
+        callbackURL: nextRoute,
+        fetchOptions: {
+          onError: (ctx: any) => {
+            const msg = ctx.error.message || "Invalid credentials.";
+            setError(msg);
+            toast.error(msg);
+            setIsLoading(false);
+          },
+          onSuccess: () => {
+            toast.success(`Logged in as Demo ${role === "traveler" ? "Traveler" : "Agent"}!`);
+            router.push(nextRoute);
+          }
+        }
+      });
+    } catch (err: any) {
+      console.error(err);
+      const msg = err.message || "An unexpected error occurred.";
+      setError(msg);
+      toast.error(msg);
       setIsLoading(false);
     }
   };
@@ -116,7 +164,46 @@ function LoginForm() {
               <Button variant="primary" type="submit" className="w-full mt-4" disabled={isLoading}>
                 {isLoading ? "Signing in..." : "Sign In"}
               </Button>
+
+              <div className="grid grid-cols-2 gap-3 mt-2">
+                <Button 
+                  variant="secondary" 
+                  type="button" 
+                  className="w-full text-xs font-semibold py-2 border border-amber-500/20 hover:border-amber-500/40 bg-amber-500/5 text-amber-700 hover:bg-amber-500/10"
+                  onClick={() => handleDemoLogin("traveler")}
+                  disabled={isLoading}
+                >
+                  Demo Traveler
+                </Button>
+                <Button 
+                  variant="secondary" 
+                  type="button" 
+                  className="w-full text-xs font-semibold py-2 border border-indigo-500/20 hover:border-indigo-500/40 bg-indigo-500/5 text-indigo-700 hover:bg-indigo-500/10"
+                  onClick={() => handleDemoLogin("agent")}
+                  disabled={isLoading}
+                >
+                  Demo Agent
+                </Button>
+              </div>
             </form>
+
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-surface px-2 text-text-muted">Or continue with</span>
+              </div>
+            </div>
+
+            <Button 
+              variant="secondary" 
+              type="button" 
+              className="w-full flex items-center justify-center gap-2 border border-border"
+              onClick={handleGoogleLogin}
+            >
+              <FaGoogle className="text-red-500" size={18} /> Continue with Google
+            </Button>
           </div>
 
           <p className="text-center text-sm text-text-muted mt-4">

@@ -12,31 +12,36 @@ import {
 import { LuCalendarDays } from "react-icons/lu";
 import Link from "next/link";
 import axios from "axios";
+import { useQuery } from "@tanstack/react-query";
 
 export default function ExplorePage() {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [items, setItems] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const limit = 6;
 
   useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/items");
-        setItems(res.data);
-      } catch (err) {
-        console.error("Failed to fetch items:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchItems();
-  }, []);
+    const handler = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [search]);
 
-  const filteredItems = items.filter(item => 
-    item.title.toLowerCase().includes(search.toLowerCase()) ||
-    item.shortDescription.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["explore-items", page, limit, debouncedSearch],
+    queryFn: async () => {
+      const res = await axios.get(
+        `http://localhost:5000/api/items?page=${page}&limit=${limit}&search=${debouncedSearch}`
+      );
+      return res.data;
+    },
+    placeholderData: (previousData) => previousData,
+  });
+
+  const items = data?.items || [];
+  const pagination = data?.pagination || { currentPage: 1, totalPages: 1, totalItems: 0 };
 
   return (
     <div className="flex-1 bg-neutral-bg py-8 px-6 lg:px-8">
@@ -116,7 +121,9 @@ export default function ExplorePage() {
           {/* Grid */}
           <div className="flex-1">
             <div className="flex justify-between items-center mb-6">
-              <p className="text-sm text-text-muted">Showing {filteredItems.length} results</p>
+              <p className="text-sm text-text-muted">
+                Showing {items.length} of {pagination.totalItems || 0} results
+              </p>
               <select className="h-10 rounded-lg border border-border bg-surface px-3 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent">
                 <option>Sort by: Recommended</option>
                 <option>Price: Low to High</option>
@@ -131,7 +138,7 @@ export default function ExplorePage() {
                   <div key={i} className="animate-pulse bg-surface border border-border rounded-2xl h-[380px]"></div>
                 ))}
               </div>
-            ) : filteredItems.length === 0 ? (
+            ) : items.length === 0 ? (
               <div className="py-12 text-center text-text-muted bg-surface border border-border rounded-2xl">
                 No travel plans found.
               </div>
@@ -144,7 +151,7 @@ export default function ExplorePage() {
                   visible: { transition: { staggerChildren: 0.05 } }
                 }}
               >
-                {filteredItems.map((dest) => (
+                {items.map((dest: any) => (
                   <motion.div 
                     key={dest._id}
                     variants={{
@@ -176,9 +183,25 @@ export default function ExplorePage() {
               </motion.div>
             )}
             
-            {!isLoading && filteredItems.length > 0 && (
-              <div className="mt-12 flex justify-center">
-                <Button variant="secondary">Load More</Button>
+            {!isLoading && pagination.totalPages > 1 && (
+              <div className="mt-12 flex justify-center items-center gap-4">
+                <Button 
+                  variant="secondary"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-text-muted">
+                  Page {pagination.currentPage} of {pagination.totalPages}
+                </span>
+                <Button 
+                  variant="secondary"
+                  disabled={page === pagination.totalPages}
+                  onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))}
+                >
+                  Next
+                </Button>
               </div>
             )}
           </div>

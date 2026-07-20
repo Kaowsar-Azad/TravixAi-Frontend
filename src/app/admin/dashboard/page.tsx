@@ -112,7 +112,11 @@ export default function AdminDashboard() {
               <div className="flex flex-col gap-3">
                 {stats.topAgents?.length > 0 ? stats.topAgents.map((agent: any, i: number) => (
                   <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-neutral-bg border border-border">
-                    <span className="font-medium text-text">Agent ID: {agent._id.substring(0,8)}...</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-text">{agent.name || "System"}</span>
+                      {agent.email && <span className="text-xs text-text-muted">{agent.email}</span>}
+                      {!agent.name && agent._id && <span className="text-xs text-text-muted font-mono">ID: {agent._id.substring(0,8)}...</span>}
+                    </div>
                     <span className="text-sm font-semibold text-accent bg-accent/10 px-3 py-1 rounded-full">{agent.planCount} Plans</span>
                   </div>
                 )) : (
