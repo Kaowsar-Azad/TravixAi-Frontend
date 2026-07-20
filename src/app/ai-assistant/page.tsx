@@ -135,28 +135,37 @@ export default function AiAssistant() {
   };
 
   useEffect(() => {
-    // Load sessions when storageKey changes (user logs in or out)
-    if (storageKey) {
-      const sessions = localStorage.getItem(storageKey);
-      if (sessions) {
+    // Load sessions when user logs in
+    if (user) {
+      const fetchChats = async () => {
         try {
-          setSavedSessions(JSON.parse(sessions));
-        } catch (e) {
+          const res = await axios.get(`${API_BASE_URL}/api/ai/chats`, { withCredentials: true });
+          if (res.data && res.data.success) {
+            // Map MongoDB _id to id if necessary, or just use sessionId
+            const mappedSessions = res.data.chats.map((c: any) => ({
+              id: c.sessionId,
+              title: c.title,
+              updatedAt: c.updatedAt,
+              messages: c.messages,
+            }));
+            setSavedSessions(mappedSessions);
+          }
+        } catch (err) {
+          console.error("Failed to fetch chats:", err);
           setSavedSessions([]);
         }
-      } else {
-        setSavedSessions([]);
-      }
+      };
+      fetchChats();
     } else {
       setSavedSessions([]);
       setMessages([]);
       setCurrentSessionId(null);
     }
-  }, [storageKey]);
+  }, [user]);
 
   useEffect(() => {
     // Save session when messages change (only if user is logged in)
-    if (storageKey && messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
+    if (user && messages.length > 0 && messages[messages.length - 1].role === 'assistant') {
       const sessionId = currentSessionId || Date.now().toString();
       if (!currentSessionId) setCurrentSessionId(sessionId);
       
@@ -179,13 +188,20 @@ export default function AiAssistant() {
         } else {
           newSessions.unshift(newSession);
         }
-        
-        localStorage.setItem(storageKey, JSON.stringify(newSessions));
         return newSessions;
+      });
+
+      // Save to backend API
+      axios.post(`${API_BASE_URL}/api/ai/chats`, {
+        sessionId,
+        title,
+        messages
+      }, { withCredentials: true }).catch(err => {
+        console.error("Failed to save chat to backend:", err);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, storageKey]);
+  }, [messages, user]);
 
   const handleNewChat = () => {
     setMessages([]);
